@@ -3,7 +3,7 @@
 const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { z } = require('zod');
-const WebHelpSearchClient = require('./webhelp-search');
+const { WebHelpSearchClient } = require('./lib/webhelp-search-client');
 
 /**
  * WebHelp Search MCP Server

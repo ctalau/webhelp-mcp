@@ -1,68 +1,6 @@
 import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
-
-// Import the WebHelp search functionality
-// Note: We'll need to convert these to ES modules or use require in a way that works with Next.js
-const WebHelpIndexLoader = require('../../webhelp-index-loader');
-
-class WebHelpSearchClient {
-  private indexLoader: any;
-  public isLoaded: boolean = false;
-  public baseUrl?: string;
-
-  constructor() {
-    this.indexLoader = new WebHelpIndexLoader();
-  }
-
-  async loadIndex(baseUrl: string) {
-    await this.indexLoader.loadIndex(baseUrl);
-    this.isLoaded = true;
-    this.baseUrl = baseUrl;
-  }
-
-  search(query: string) {
-    if (!this.isLoaded) {
-      throw new Error('Search index not loaded');
-    }
-
-    if (!(global as any).performSearch) {
-      throw new Error('Search engine not loaded properly - performSearch function not found');
-    }
-
-    try {
-      let result = null;
-      (global as any).performSearch(query, function(searchResult: any) {
-        result = searchResult;
-      });
-      return this.formatSearchResult(result);
-    } catch (error: any) {
-      return {
-        error: `Search error: ${error.message}`,
-        query: query,
-        results: []
-      };
-    }
-  }
-
-  private formatSearchResult(searchResult: any) {
-    return {
-      query: searchResult.searchExpression || searchResult.originalSearchExpression,
-      originalQuery: searchResult.originalSearchExpression,
-      excluded: searchResult.excluded || [],
-      error: searchResult.error,
-      isPhraseSearch: searchResult.isPhraseSearch,
-      resultCount: searchResult.documents ? searchResult.documents.length : 0,
-      results: (searchResult.documents || []).map((doc: any) => ({
-        id: doc.topicID,
-        title: doc.title,
-        path: doc.relativePath,
-        description: doc.shortDescription,
-        score: doc.scoring,
-        words: doc.words
-      }))
-    };
-  }
-}
+import { WebHelpSearchClient } from "../../lib/webhelp-search-client";
 
 // Global search client instance
 const searchClient = new WebHelpSearchClient();

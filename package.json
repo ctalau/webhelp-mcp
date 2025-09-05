@@ -11,7 +11,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "legacy-search": "node webhelp-search.js",
+    "search-cli": "tsx webhelp-search.ts",
     "legacy-mcp": "node webhelp-search-mcp-server.js"
   },
   "keywords": [
@@ -38,6 +38,7 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/react": "^19",
+    "tsx": "^4.20.5",
     "typescript": "^5"
   },
   "engines": {
