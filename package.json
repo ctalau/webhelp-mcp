@@ -29,7 +29,7 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
     "mcp-handler": "^1.0.1",
-    "next": "15.2.4",
+    "next": "^15.5.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "redis": "^4.7.0",

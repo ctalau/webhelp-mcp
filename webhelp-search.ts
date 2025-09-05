@@ -23,7 +23,7 @@ async function main() {
     try {
         const result = await client.search(query, indexUrl);
         client.displayTopResults(result, 10);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Search failed:', error.message);
         process.exit(1);
     }

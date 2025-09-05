@@ -42,7 +42,7 @@ const handler = createMcpHandler(
 
           // Format results
           const topResults = result.results.slice(0, maxResultsToUse);
-          const resultCount = 'resultCount' in result ? result.resultCount : result.results.length;
+          const resultCount = result.results.length;
           let output = `Search Results for "${result.query}" (${resultCount} total results):\n\n`;
           
           topResults.forEach((doc: any, index: number) => {
@@ -91,7 +91,7 @@ const handler = createMcpHandler(
     basePath: "",
     verboseLogs: true,
     maxDuration: 60,
-    disableSse: false,
+    // disableSse: false,
   },
 );
 

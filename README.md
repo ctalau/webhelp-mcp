@@ -9,15 +9,19 @@ npm install
 
 ## Usage
 
-### Basic Usage
+### CLI Usage
 
 ```bash
-npm run search-cli <webhelp-base-url> <search-query>
+npm run search-cli https://userguide.sync.ro/content-fusion "commit workspace changes"
 ```
 
-### Examples
+### MCP testing
 
 ```bash
-# Search for specific phrase
-npm run search-cli https://userguide.sync.ro/content-fusion "commit workspace changes"
+PORT=3001 npm run start 
+```
 
+Test it
+```bash
+claude --mcp-config claude-mcp-config.json --debug --permission-mode bypassPermissions
+```
