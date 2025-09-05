@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "webhelp-search": {
+      "command": "node",
+      "args": ["webhelp-search-mcp-server.js"],
+      "cwd": "D:\\workspace\\oxygen-dita-publishing",
+      "env": {}
+    }
+  }
+}

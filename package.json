@@ -1,0 +1,32 @@
+{
+  "name": "webhelp-search-client",
+  "version": "1.0.0",
+  "description": "Node.js client for searching WebHelp documentation indices with MCP server support",
+  "main": "webhelp-search.js",
+  "bin": {
+    "webhelp-search": "./webhelp-search.js",
+    "webhelp-search-mcp": "./webhelp-search-mcp-server.js"
+  },
+  "scripts": {
+    "start": "node webhelp-search.js",
+    "mcp-server": "node webhelp-search-mcp-server.js"
+  },
+  "keywords": [
+    "webhelp",
+    "search",
+    "documentation",
+    "oxygen",
+    "dita",
+    "mcp",
+    "model-context-protocol"
+  ],
+  "author": "Generated with Claude Code",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.17.5",
+    "zod": "^3.25.76"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
