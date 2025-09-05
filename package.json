@@ -1,15 +1,18 @@
 {
-  "name": "webhelp-search-client",
+  "name": "webhelp-search-nextjs-mcp",
   "version": "1.0.0",
-  "description": "Node.js client for searching WebHelp documentation indices with MCP server support",
-  "main": "webhelp-search.js",
+  "description": "Next.js-based WebHelp documentation search with MCP server support",
+  "private": true,
   "bin": {
     "webhelp-search": "./webhelp-search.js",
     "webhelp-search-mcp": "./webhelp-search-mcp-server.js"
   },
   "scripts": {
-    "start": "node webhelp-search.js",
-    "mcp-server": "node webhelp-search-mcp-server.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "legacy-search": "node webhelp-search.js",
+    "legacy-mcp": "node webhelp-search-mcp-server.js"
   },
   "keywords": [
     "webhelp",
@@ -18,15 +21,27 @@
     "oxygen",
     "dita",
     "mcp",
-    "model-context-protocol"
+    "model-context-protocol",
+    "nextjs"
   ],
   "author": "Generated with Claude Code",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
+    "mcp-handler": "^1.0.1",
+    "next": "15.2.4",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "redis": "^4.7.0",
     "zod": "^3.25.76"
   },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "typescript": "^5"
+  },
   "engines": {
-    "node": ">=16.0.0"
-  }
+    "node": ">=18.0.0"
+  },
+  "packageManager": "npm"
 }
