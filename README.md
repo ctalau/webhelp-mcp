@@ -23,5 +23,5 @@ PORT=3001 npm run start
 
 Test it
 ```bash
-claude --mcp-config claude-mcp-config.json --debug --permission-mode bypassPermissions
+ NO_PROXY="localhost" claude --mcp-config claude-mcp-config.json --debug --permission-mode bypassPermissions
 ```
