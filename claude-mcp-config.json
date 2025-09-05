@@ -2,7 +2,7 @@
   "mcpServers": {
     "webhelp": {
       "type": "http",
-      "url": "https://webhelp-mcp.vercel.app/mcp"
+      "url": "http://localhost:3002/www.oxygenxml.com/doc/versions/27.0.0/ug-webauthor/"
     }
   }
 }

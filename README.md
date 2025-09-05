@@ -28,4 +28,6 @@ Test it
 
 ### Vercel deployment
 
-https://webhelp-mcp.vercel.app/mcp
+https://webhelp-mcp.vercel.app/<site>
+
+https://webhelp-mcp.vercel.app/www.oxygenxml.com/doc/versions/27.0.0/ug-waCustom/

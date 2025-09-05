@@ -8,22 +8,23 @@ const searchClient = new WebHelpSearchClient();
 
 const handler = async (
   req: NextRequest,
-  { params }: { params: Promise<{ site: string }> }
+  { params }: { params: Promise<{ site: Array<string> }> }
 ) => {
   const { site } = await params;
-  console.log('Requests:', req.nextUrl.pathname, site);
+  let endpoint = site.join('/');
+  let baseUrl = `https://${endpoint}/`;
+  console.log('Requests:', req.nextUrl.pathname, endpoint);
 
   return createMcpHandler(
     async (server) => {
       server.tool(
         "search_webhelp",
-        "Search WebHelp documentation. Automatically loads the search index if not already loaded.",
+        "Search WebHelp documentation for the site at: " + baseUrl,
         {
-          baseUrl: z.string().describe("Base URL of the WebHelp documentation (e.g., https://example.com/docs)"),
           query: z.string().describe("Search query string (supports boolean operators like AND, OR)"),
           maxResults: z.number().optional().describe("Maximum number of results to return (default: 10)")
         },
-        async ({ baseUrl, query, maxResults }) => {
+        async ({ query, maxResults }) => {
           try {
             // Perform the search (index loading is now handled automatically)
             const result = await searchClient.search(query, baseUrl);
@@ -90,13 +91,13 @@ const handler = async (
       capabilities: {
         tools: {
           search_webhelp: {
-            description: "Search WebHelp documentation with automatic index loading",
+            description: "Search WebHelp documentation for the site at: " + baseUrl,
           },
         },
       },
     },
     {
-      streamableHttpEndpoint: `/${site}`,
+      streamableHttpEndpoint: `/${endpoint}`,
       verboseLogs: true,
       maxDuration: 60,
       // disableSse: false,
