@@ -11,8 +11,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "search-cli": "tsx webhelp-search.ts",
-    "legacy-mcp": "node webhelp-search-mcp-server.js"
+    "search-cli": "tsx webhelp-search.ts"
   },
   "keywords": [
     "webhelp",
