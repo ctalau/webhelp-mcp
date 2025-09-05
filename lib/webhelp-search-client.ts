@@ -1,4 +1,4 @@
-const WebHelpIndexLoader = require('../webhelp-index-loader');
+import { WebHelpIndexLoader } from './webhelp-index-loader';
 
 export interface SearchResult {
   query: string;
@@ -18,8 +18,8 @@ export interface SearchResult {
 }
 
 export class WebHelpSearchClient {
-  private indexLoader: any;
-  public isLoaded: boolean = false;
+  private indexLoader: WebHelpIndexLoader;
+  private indexCache: Map<string, boolean> = new Map();
   public baseUrl?: string;
 
   constructor() {
@@ -28,17 +28,52 @@ export class WebHelpSearchClient {
 
   async loadIndex(baseUrl: string): Promise<void> {
     await this.indexLoader.loadIndex(baseUrl);
-    this.isLoaded = true;
+    this.indexCache.set(baseUrl, true);
     this.baseUrl = baseUrl;
   }
 
-  search(query: string): SearchResult {
-    if (!this.isLoaded) {
-      throw new Error('Search index not loaded');
+  async search(query: string, baseUrl?: string): Promise<SearchResult> {
+    const indexUrl = baseUrl || this.baseUrl;
+    
+    if (!indexUrl) {
+      return {
+        error: 'No base URL provided for search index',
+        query: query,
+        originalQuery: query,
+        excluded: [],
+        isPhraseSearch: false,
+        resultCount: 0,
+        results: []
+      };
+    }
+
+    // Load index if not already cached
+    if (!this.indexCache.has(indexUrl)) {
+      try {
+        await this.loadIndex(indexUrl);
+      } catch (error: any) {
+        return {
+          error: `Failed to load index: ${error.message}`,
+          query: query,
+          originalQuery: query,
+          excluded: [],
+          isPhraseSearch: false,
+          resultCount: 0,
+          results: []
+        };
+      }
     }
 
     if (!(global as any).performSearch) {
-      throw new Error('Search engine not loaded properly - performSearch function not found');
+      return {
+        error: 'Search engine not loaded properly - performSearch function not found',
+        query: query,
+        originalQuery: query,
+        excluded: [],
+        isPhraseSearch: false,
+        resultCount: 0,
+        results: []
+      };
     }
 
     try {

@@ -17,23 +17,8 @@ const handler = createMcpHandler(
       },
       async ({ baseUrl, query, maxResults }) => {
         try {
-          // Auto-load index if not already loaded or if baseUrl is different
-          if (!searchClient.isLoaded || searchClient.baseUrl !== baseUrl) {
-            try {
-              await searchClient.loadIndex(baseUrl);
-            } catch (loadError: any) {
-              return {
-                content: [{
-                  type: "text",
-                  text: `Error loading search index from ${baseUrl}: ${loadError.message}`
-                }],
-                isError: true
-              };
-            }
-          }
-
-          // Perform the search
-          const result = searchClient.search(query);
+          // Perform the search (index loading is now handled automatically)
+          const result = await searchClient.search(query, baseUrl);
           const maxResultsToUse = maxResults || 10;
           
           if (result.error) {

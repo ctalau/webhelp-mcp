@@ -21,8 +21,7 @@ async function main() {
     const client = new WebHelpSearchClient();
 
     try {
-        await client.loadIndex(indexUrl);
-        const result = client.search(query);
+        const result = await client.search(query, indexUrl);
         client.displayTopResults(result, 10);
     } catch (error) {
         console.error('Search failed:', error.message);

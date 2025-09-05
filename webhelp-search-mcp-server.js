@@ -39,23 +39,8 @@ class WebHelpSearchMcpServer {
             },
             async ({ baseUrl, query, maxResults }) => {
                 try {
-                    // Auto-load index if not already loaded or if baseUrl is different
-                    if (!this.searchClient.isLoaded || this.searchClient.baseUrl !== baseUrl) {
-                        try {
-                            await this.searchClient.loadIndex(baseUrl);
-                        } catch (loadError) {
-                            return {
-                                content: [{
-                                    type: "text",
-                                    text: `Error loading search index from ${baseUrl}: ${loadError.message}`
-                                }],
-                                isError: true
-                            };
-                        }
-                    }
-
-                    // Perform the search
-                    const result = this.searchClient.search(query);
+                    // Perform the search (index loading is now handled automatically)
+                    const result = await this.searchClient.search(query, baseUrl);
                     const maxResultsToUse = maxResults || 10;
                     
                     if (result.error) {
