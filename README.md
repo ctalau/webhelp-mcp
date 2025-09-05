@@ -25,3 +25,7 @@ Test it
 ```bash
  NO_PROXY="localhost" claude --mcp-config claude-mcp-config.json --debug --permission-mode bypassPermissions
 ```
+
+### Vercel deployment
+
+https://webhelp-mcp.vercel.app/mcp

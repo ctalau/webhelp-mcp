@@ -2,7 +2,7 @@
   "mcpServers": {
     "webhelp": {
       "type": "http",
-      "url": "http://localhost:3001/mcp"
+      "url": "https://webhelp-mcp.vercel.app/mcp"
     }
   }
 }
