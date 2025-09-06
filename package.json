@@ -3,15 +3,10 @@
   "version": "1.0.0",
   "description": "Next.js-based WebHelp documentation search with MCP server support",
   "private": true,
-  "bin": {
-    "webhelp-search": "./webhelp-search.js",
-    "webhelp-search-mcp": "./webhelp-search-mcp-server.js"
-  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "search-cli": "tsx webhelp-search.ts"
+    "start": "next start"
   },
   "keywords": [
     "webhelp",
