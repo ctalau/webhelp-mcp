@@ -1,33 +1,39 @@
-# WebHelp Search MCP
+# MCP WebHelp Server
 
+Transform any public Oxygen WebHelp deployment into a Model Context Protocol server with simplicity.
 
-## Installation
+Visit the live demo at [webhelp-mcp.vercel.app](https://webhelp-mcp.vercel.app/).
 
-```bash
-npm install
-```
+## Features
 
-## Usage
+- **Lightning fast** server generation for seamless documentation access.
+- **Wide AI tool support**: works with Oxygen AI Positron, ChatGPT Deep Research, Claude Desktop, Cursor and more.
+- **Open source** – [view on GitHub](https://github.com/ctalau/webhelp-mcp).
 
-### CLI Usage
+## Technology & Deployment
 
-```bash
-npm run search-cli https://userguide.sync.ro/content-fusion "commit workspace changes"
-```
+### Tech Stack
 
-### MCP testing
+- **Framework**: Next.js 15, React 19 and TypeScript
+- **MCP**: `mcp-handler` with `search` and `fetch` tools powered by a `WebHelpSearchClient`
+- **Content processing**: `jsdom` and `turndown` convert WebHelp HTML to Markdown
 
-```bash
-PORT=3001 npm run start 
-```
+### Architecture
 
-Test it
-```bash
- NO_PROXY="localhost" claude --mcp-config claude-mcp-config.json --debug --permission-mode bypassPermissions
-```
+The server dynamically loads the WebHelp search index for a requested site and exposes a Model Context Protocol endpoint. The Next.js API route `/[...site]` wraps the `WebHelpSearchClient` with `createMcpHandler`, providing:
 
-### Vercel deployment
+- `search` – query WebHelp documentation and return matching documents
+- `fetch` – retrieve and convert a document to Markdown for detailed analysis
 
-https://webhelp-mcp.vercel.app/<site>
+### Deploying to Vercel
 
-https://webhelp-mcp.vercel.app/www.oxygenxml.com/doc/versions/27.0.0/ug-waCustom/
+1. Fork and clone this repository.
+2. Install dependencies: `npm install`.
+3. Build the project: `npm run build`.
+4. Push to a GitHub repository and import it into [Vercel](https://vercel.com/). The default settings are sufficient—no extra environment variables are required.
+5. Access your server at `https://<your-vercel-domain>/<site>`.
+
+## License
+
+Released under the [MIT License](LICENSE).
+
