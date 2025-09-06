@@ -211,7 +211,8 @@ export default function HomePage() {
                   </p>
                   <div className="code-block p-4 rounded-lg">
                     <code className="text-green-400 font-mono">
-                      Example: https://www.oxygenxml.com/doc/versions/27.1/ug-editor/
+                      <span className="text-white">Example:</span>{' '}
+                      https://www.oxygenxml.com/doc/versions/27.1/ug-editor/
                     </code>
                   </div>
                 </div>
@@ -265,7 +266,7 @@ export default function HomePage() {
                   </p>
                   <div className="code-block p-4 rounded-lg">
                     <code className="text-blue-400 font-mono text-sm">
-                      {baseUrl}/<span className="text-green-400">www.oxygenxml.com/doc/versions/27.1/ug-editor/</span>
+                      {baseUrl}/<span className="text-yellow-400">www.oxygenxml.com/doc/versions/27.1/ug-editor/</span>
                     </code>
                   </div>
                 </div>
@@ -332,9 +333,6 @@ export default function HomePage() {
               MCP Server for Oxygen WebHelp
             </h3>
           </div>
-          <p className="text-gray-400 mb-6">
-            Transforming documentation accessibility through intelligent server generation
-          </p>
           <div className="text-gray-500 text-sm">Built with ❤️ for the documentation community.</div>
         </div>
       </footer>
