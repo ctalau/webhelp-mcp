@@ -6,16 +6,18 @@ export default function HomePage() {
   const [webhelpUrl, setWebhelpUrl] = useState('https://www.oxygenxml.com/doc/versions/27.1/ug-editor/');
   const [mcpUrl, setMcpUrl] = useState('');
   const [copyText, setCopyText] = useState('Copy');
-  const [testText, setTestText] = useState('Test Connection');
-  const [testing, setTesting] = useState(false);
+  const [baseUrl, setBaseUrl] = useState('');
 
   useEffect(() => {
-    generateMCPUrl(webhelpUrl);
+    const origin = window.location.origin;
+    setBaseUrl(origin);
   }, []);
 
   useEffect(() => {
-    generateMCPUrl(webhelpUrl);
-  }, [webhelpUrl]);
+    if (baseUrl) {
+      generateMCPUrl(webhelpUrl);
+    }
+  }, [webhelpUrl, baseUrl]);
 
   function generateMCPUrl(urlStr: string) {
     if (!urlStr) {
@@ -25,7 +27,7 @@ export default function HomePage() {
     try {
       const url = new URL(urlStr);
       const pathWithoutProtocol = url.hostname + url.pathname;
-      const mcp = `https://webhelp-mcp-git-codex-add-home-page-for-1611af-ctalaus-projects.vercel.app/${pathWithoutProtocol}`;
+      const mcp = `${baseUrl.replace(/\/$/, '')}/${pathWithoutProtocol}`;
       setMcpUrl(mcp);
     } catch {
       setMcpUrl('Please enter a valid URL');
@@ -38,20 +40,6 @@ export default function HomePage() {
         setCopyText('Copied!');
         setTimeout(() => setCopyText('Copy'), 2000);
       });
-    }
-  };
-
-  const testConnection = () => {
-    if (mcpUrl && mcpUrl !== 'Please enter a valid URL') {
-      setTesting(true);
-      setTestText('Testing...');
-      setTimeout(() => {
-        setTestText('Connection Successful!');
-        setTimeout(() => {
-          setTesting(false);
-          setTestText('Test Connection');
-        }, 3000);
-      }, 2000);
     }
   };
 
@@ -114,7 +102,7 @@ export default function HomePage() {
               MCP WebHelp Server
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Transform any public Oxygen WebHelp deployment into a powerful Model Context Protocol server with stunning
+              Transform any public Oxygen WebHelp deployment into a powerful Model Context Protocol server with
               simplicity
             </p>
           </div>
@@ -168,39 +156,27 @@ export default function HomePage() {
                 <label className="block text-lg font-semibold mb-3 text-green-300">
                   Generated MCP Server URL
                 </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    id="mcpUrl"
-                    readOnly
-                    placeholder="Your MCP server URL will appear here..."
-                    className="w-full px-6 py-4 bg-gray-900 border border-gray-600 rounded-xl text-green-400 placeholder-gray-500 focus:outline-none text-lg font-mono"
-                    value={mcpUrl}
-                  />
-                  <button
-                    onClick={copyToClipboard}
-                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                      copyText === 'Copied!' ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
-                    }`}
-                    id="copyBtn"
-                  >
-                    {copyText}
-                  </button>
-                </div>
+                <input
+                  type="text"
+                  id="mcpUrl"
+                  readOnly
+                  placeholder="Your MCP server URL will appear here..."
+                  className="w-full px-6 py-4 bg-gray-900 border border-gray-600 rounded-xl text-green-400 placeholder-gray-500 focus:outline-none text-lg font-mono"
+                  value={mcpUrl}
+                />
               </div>
 
               <div className="text-center">
                 <button
-                  onClick={testConnection}
+                  onClick={copyToClipboard}
                   className={`px-8 py-3 rounded-xl font-semibold text-lg transform hover:scale-105 transition-all duration-300 shadow-lg bg-gradient-to-r ${
-                    testing
+                    copyText === 'Copied!'
                       ? 'from-green-600 to-green-700'
                       : 'from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600'
                   }`}
-                  id="testBtn"
-                  disabled={testing}
+                  id="copyBtn"
                 >
-                  {testText}
+                  {copyText}
                 </button>
               </div>
             </div>
@@ -216,7 +192,7 @@ export default function HomePage() {
               How It Works
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Follow these simple steps to create your MCP server URL
+              Follow these steps to create your MCP server URL
             </p>
           </div>
 
@@ -253,18 +229,34 @@ export default function HomePage() {
                   </p>
                   <div className="code-block p-4 rounded-lg">
                     <code className="text-yellow-400 font-mono">
-                      Remove: <span className="line-through text-red-400">https://</span>
+                      <span className="text-white">Remove:</span>{' '}
+                      <span className="line-through text-red-400">https://</span>
                       <br />
-                      Keep: www.oxygenxml.com/doc/versions/27.1/ug-editor/
+                      <span className="text-white">Keep:</span> www.oxygenxml.com/doc/versions/27.1/ug-editor/
                     </code>
                   </div>
                 </div>
               </div>
-
               {/* Step 3 */}
               <div className="flex flex-col md:flex-row items-start gap-6 p-8 glass-effect rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
                 <div className="step-number w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg flex-shrink-0">
                   3
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold mb-4 text-blue-300">Note the Base MCP URL</h3>
+                  <p className="text-gray-300 mb-4 text-lg leading-relaxed">
+                    This is the base address of this MCP server.
+                  </p>
+                  <div className="code-block p-4 rounded-lg">
+                    <code className="text-blue-400 font-mono">{baseUrl}/</code>
+                  </div>
+                </div>
+              </div>
+
+              {/* Step 4 */}
+              <div className="flex flex-col md:flex-row items-start gap-6 p-8 glass-effect rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300">
+                <div className="step-number w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold text-white shadow-lg flex-shrink-0">
+                  4
                 </div>
                 <div className="flex-1">
                   <h3 className="text-2xl font-bold mb-4 text-green-300">Append to Base MCP URL</h3>
@@ -273,8 +265,7 @@ export default function HomePage() {
                   </p>
                   <div className="code-block p-4 rounded-lg">
                     <code className="text-blue-400 font-mono text-sm">
-                      https://webhelp-mcp-git-codex-add-home-page-for-1611af-ctalaus-projects.vercel.app/
-                      <span className="text-green-400">www.oxygenxml.com/doc/versions/27.1/ug-editor/</span>
+                      {baseUrl}/<span className="text-green-400">www.oxygenxml.com/doc/versions/27.1/ug-editor/</span>
                     </code>
                   </div>
                 </div>
@@ -302,7 +293,7 @@ export default function HomePage() {
               </div>
               <h3 className="text-2xl font-bold mb-4 text-blue-300">Lightning Fast</h3>
               <p className="text-gray-300 leading-relaxed">
-                Instant server generation with optimized performance for seamless documentation access.
+                Instant server generation for seamless documentation access from AI tools.
               </p>
             </div>
 
@@ -312,9 +303,9 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-green-300">Reliable</h3>
+              <h3 className="text-2xl font-bold mb-4 text-green-300">Wide AI Tool Support</h3>
               <p className="text-gray-300 leading-relaxed">
-                Built on robust infrastructure with 99.9% uptime guarantee for your documentation needs.
+                Works with Oxygen AI Positron, ChatGPT Deep Research, Claude Desktop, Cursor, and more.
               </p>
             </div>
 
@@ -324,9 +315,9 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-purple-300">Secure</h3>
+              <h3 className="text-2xl font-bold mb-4 text-purple-300">Open Source</h3>
               <p className="text-gray-300 leading-relaxed">
-                Enterprise-grade security with encrypted connections and secure data handling protocols.
+                Deploy your own server and customize it for your needs.
               </p>
             </div>
           </div>
@@ -338,15 +329,13 @@ export default function HomePage() {
         <div className="container mx-auto px-6 text-center">
           <div className="mb-6">
             <h3 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              MCP WebHelp Server
+              MCP Server for Oxygen WebHelp
             </h3>
           </div>
           <p className="text-gray-400 mb-6">
             Transforming documentation accessibility through intelligent server generation
           </p>
-          <div className="text-gray-500 text-sm">
-            © 2024 MCP WebHelp Server. Built with ❤️ for the documentation community.
-          </div>
+          <div className="text-gray-500 text-sm">Built with ❤️ for the documentation community.</div>
         </div>
       </footer>
     </>
