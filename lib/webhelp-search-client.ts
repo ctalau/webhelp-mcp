@@ -1,4 +1,6 @@
 import { downloadFile } from './downloadFile';
+import TurndownService from 'turndown';
+import { JSDOM } from 'jsdom';
 import { WebHelpIndexLoader } from './webhelp-index-loader';
 
 export interface SearchResult {
@@ -129,11 +131,24 @@ export class WebHelpSearchClient {
     metadata?: any;
   }> {
     let fullUrl = `${baseUrl}/${documentId}`;
-    let content = await downloadFile(fullUrl);
+    let htmlContent = await downloadFile(fullUrl);
+    
+    // Extract just the article element
+    let articleContent = this.extractArticleElement(htmlContent);
+    
+    // Convert HTML to markdown
+    const turndownService = new TurndownService({
+      headingStyle: 'atx',
+      codeBlockStyle: 'fenced',
+      bulletListMarker: '-'
+    });
+    
+    const markdownContent = turndownService.turndown(articleContent);
+    
     return {
       id: documentId,
-      title: this.extractTitleFromContent(content) || documentId,
-      text: content,
+      title: this.extractTitleFromContent(htmlContent) || documentId,
+      text: markdownContent,
       url: fullUrl
     }
   }
@@ -147,6 +162,19 @@ export class WebHelpSearchClient {
       return titleAndAfter;
     }
     return titleAndAfter.split('</title>')[0];
+  }
+
+  extractArticleElement(htmlContent: string): string {
+    const dom = new JSDOM(htmlContent);
+    const document = dom.window.document;
+    
+    const articleElement = document.querySelector('article');
+    if (articleElement) {
+      return articleElement.outerHTML;
+    }
+    
+    // If no article element found, return the original content
+    return htmlContent;
   }
 
   displayTopResults(result: SearchResult, maxResults: number = 10): void {

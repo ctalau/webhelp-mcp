@@ -27,11 +27,15 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
+    "@types/jsdom": "^21.1.7",
+    "@types/turndown": "^5.0.5",
+    "jsdom": "^26.1.0",
     "mcp-handler": "^1.0.1",
     "next": "^15.5.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "redis": "^4.7.0",
+    "turndown": "^7.2.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
