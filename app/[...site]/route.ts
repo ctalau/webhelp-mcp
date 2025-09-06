@@ -18,17 +18,16 @@ const handler = async (
   return createMcpHandler(
     async (server) => {
       server.tool(
-        "search_webhelp",
-        "Search WebHelp documentation for the site at: " + baseUrl,
+        "search",
+        "Search documentation for the site at: " + baseUrl,
         {
           query: z.string().describe("Search query string (supports boolean operators like AND, OR)"),
-          maxResults: z.number().optional().describe("Maximum number of results to return (default: 10)")
         },
-        async ({ query, maxResults }) => {
+        async ({ query }) => {
           try {
             // Perform the search (index loading is now handled automatically)
             const result = await searchClient.search(query, baseUrl);
-            const maxResultsToUse = maxResults || 10;
+            const maxResultsToUse = 10;
             
             if (result.error) {
               return {
@@ -40,39 +39,17 @@ const handler = async (
               };
             }
 
-            if (result.results.length === 0) {
-              return {
-                content: [{
-                  type: "text",
-                  text: `No results found for query: "${result.query}"`
-                }]
-              };
-            }
-
             // Format results
             const topResults = result.results.slice(0, maxResultsToUse);
-            const resultCount = result.results.length;
-            let output = `Search Results for "${result.query}" (${resultCount} total results):\n\n`;
-            
-            topResults.forEach((doc: any, index: number) => {
-              output += `${index + 1}. ${doc.title} (Score: ${doc.score})\n`;
-              output += `   Path: ${doc.path}\n`;
-              if (doc.description) {
-                const desc = doc.description.length > 150 
-                  ? doc.description.substring(0, 150) + '...' 
-                  : doc.description;
-                output += `   Description: ${desc}\n`;
-              }
-              if (doc.words && doc.words.length > 0) {
-                output += `   Matched words: ${doc.words.join(', ')}\n`;
-              }
-              output += '\n';
-            });
-
+            let results = topResults.map((doc: any) => ({
+                title: doc.title,
+                id: doc.path,
+                url: `${baseUrl}${doc.path}`
+              }));
             return {
               content: [{
                 type: "text",
-                text: output.trim()
+                text: JSON.stringify(results)
               }]
             };
           } catch (error: any) {
@@ -86,12 +63,42 @@ const handler = async (
           }
         }
       );
+      server.tool(
+        "fetch",
+        "Retrieve complete document content by ID for detailed analysis and citation. Use this after finding relevant documents with the search tool.",
+        {
+          id: z.string().describe("Document ID from search results")
+        },
+        async ({ id }) => {
+          try {
+            const fetchResult = await searchClient.fetchDocumentContent(id, baseUrl);
+
+            return {
+              content: [{
+                type: "text",
+                text: JSON.stringify(fetchResult)
+              }]
+            };
+          } catch (error: any) {
+            return {
+              content: [{
+                type: "text",
+                text: `Fetch failed: ${error.message}`
+              }],
+              isError: true
+            };
+          }
+        }
+      );
     },
     {
       capabilities: {
         tools: {
-          search_webhelp: {
-            description: "Search WebHelp documentation for the site at: " + baseUrl,
+          search: {
+            description: "Search documentation for the site at: " + baseUrl,
+          },
+          fetch: {
+            description: "Fetch the content of a document by its ID"
           },
         },
       },

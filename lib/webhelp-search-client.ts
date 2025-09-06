@@ -1,3 +1,4 @@
+import { downloadFile } from './downloadFile';
 import { WebHelpIndexLoader } from './webhelp-index-loader';
 
 export interface SearchResult {
@@ -112,6 +113,40 @@ export class WebHelpSearchClient {
         words: doc.words
       }))
     };
+  }
+
+  /**
+   * Fetch the content of a document by its ID
+   * @param documentId - The ID of the document to fetch - its relative path
+   * @param baseUrl - The base URL of the WebHelp documentation
+   * @returns The content of the document
+   */
+  async fetchDocumentContent(documentId: string, baseUrl?: string): Promise<{
+    id: string;
+    title: string;
+    text: string;
+    url: string;
+    metadata?: any;
+  }> {
+    let fullUrl = `${baseUrl}/${documentId}`;
+    let content = await downloadFile(fullUrl);
+    return {
+      id: documentId,
+      title: this.extractTitleFromContent(content) || documentId,
+      text: content,
+      url: fullUrl
+    }
+  }
+
+  extractTitleFromContent(content: string): string {
+    if (!content.includes('<title>')) {
+      return '';
+    }
+    let titleAndAfter = content.split('<title>')[1];
+    if (!titleAndAfter.includes('</title>')) {
+      return titleAndAfter;
+    }
+    return titleAndAfter.split('</title>')[0];
   }
 
   displayTopResults(result: SearchResult, maxResults: number = 10): void {
