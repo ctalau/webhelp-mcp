@@ -22,6 +22,18 @@ export interface SearchIndex {
 export class WebHelpIndexLoader {
   private baseUrl: string = '';
 
+  private parseJsonWithLogging<T>(json: string, context: string): T | null {
+    try {
+      return JSON.parse(json) as T;
+    } catch (e: any) {
+      console.error(`Failed to parse JSON for ${context}: ${e.message}`);
+      if (json) {
+        console.error(`JSON snippet: ${json.substring(0, 500)}`);
+      }
+      return null;
+    }
+  }
+
   async downloadSearchEngine(searchUrl: string): Promise<string> {
     return await downloadFile(`${searchUrl}/nwSearchFnt.js`);
   }
@@ -118,86 +130,91 @@ export class WebHelpIndexLoader {
 
   processStopwords(stopwordsContent: string): void {
     if (stopwordsContent) {
-      try {
-        // Extract JSON from var assignment
-        const jsonMatch = stopwordsContent.match(/var\s+stopwords\s*=\s*(\[[\s\S]*?\]);?\s*(?:\/\/.*)?$/);
-        if (jsonMatch) {
-          (global as any).stopwords = JSON.parse(jsonMatch[1]);
-          (global as any).stopWords = (global as any).stopwords;
+      // Extract JSON from var assignment
+      const jsonMatch = stopwordsContent.match(/var\s+stopwords\s*=\s*(\[[\s\S]*?\]);?\s*(?:\/\/.*)?$/);
+      if (jsonMatch) {
+        const parsed = this.parseJsonWithLogging<any[]>(jsonMatch[1], 'stopwords');
+        if (parsed) {
+          (global as any).stopwords = parsed;
+          (global as any).stopWords = parsed;
         }
-      } catch (e) {
-        // Skip if stopwords file has issues
       }
     }
   }
 
   processLinkToParent(linkToParentContent: string): void {
     if (linkToParentContent) {
-      try {
-        // Extract JSON from var assignment
-        const jsonMatch = linkToParentContent.match(/var\s+linkToParent\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
-        if (jsonMatch) {
-          (global as any).linkToParent = JSON.parse(jsonMatch[1]);
+      // Extract JSON from var assignment
+      const jsonMatch = linkToParentContent.match(/var\s+linkToParent\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
+      if (jsonMatch) {
+        const parsed = this.parseJsonWithLogging<Record<string, any>>(jsonMatch[1], 'linkToParent');
+        if (parsed) {
+          (global as any).linkToParent = parsed;
         }
-      } catch (e) {
-        // Skip if link-to-parent file has issues
       }
     }
   }
 
   processKeywords(keywordsContent: string): void {
     if (keywordsContent) {
-      try {
-        // Extract keywords variable
-        const keywordsMatch = keywordsContent.match(/var\s+keywords\s*=\s*(\[[\s\S]*?\]);/);
-        if (keywordsMatch) {
-          (global as any).keywords = JSON.parse(keywordsMatch[1]);
+      // Extract keywords variable
+      const keywordsMatch = keywordsContent.match(/var\s+keywords\s*=\s*(\[[\s\S]*?\]);/);
+      if (keywordsMatch) {
+        const parsed = this.parseJsonWithLogging<any[]>(keywordsMatch[1], 'keywords');
+        if (parsed) {
+          (global as any).keywords = parsed;
         }
-        
-        // Extract ph variable
-        const phMatch = keywordsContent.match(/var\s+ph\s*=\s*(\{[\s\S]*?\});/);
-        if (phMatch) {
-          (global as any).ph = JSON.parse(phMatch[1]);
+      }
+
+      // Extract ph variable
+      const phMatch = keywordsContent.match(/var\s+ph\s*=\s*(\{[\s\S]*?\});/);
+      if (phMatch) {
+        const parsed = this.parseJsonWithLogging<Record<string, any>>(phMatch[1], 'ph');
+        if (parsed) {
+          (global as any).ph = parsed;
         }
-        
-        // Extract keywordsInfo variable
-        const keywordsInfoMatch = keywordsContent.match(/var\s+keywordsInfo\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
-        if (keywordsInfoMatch) {
-          (global as any).keywordsInfo = JSON.parse(keywordsInfoMatch[1]);
+      }
+
+      // Extract keywordsInfo variable
+      const keywordsInfoMatch = keywordsContent.match(/var\s+keywordsInfo\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
+      if (keywordsInfoMatch) {
+        const parsed = this.parseJsonWithLogging<Record<string, any>>(keywordsInfoMatch[1], 'keywordsInfo');
+        if (parsed) {
+          (global as any).keywordsInfo = parsed;
         }
-      } catch (e) {
-        // Skip if keywords file has issues
       }
     }
   }
 
   processFileInfoList(htmlFileInfoListContent: string): void {
     if (htmlFileInfoListContent) {
-      try {
-        // Extract htmlFileInfoList variable
-        const htmlFileInfoListMatch = htmlFileInfoListContent.match(/var\s+htmlFileInfoList\s*=\s*(\[[\s\S]*?\]);/);
-        if (htmlFileInfoListMatch) {
-          (global as any).htmlFileInfoList = JSON.parse(htmlFileInfoListMatch[1]);
+      // Extract htmlFileInfoList variable
+      const htmlFileInfoListMatch = htmlFileInfoListContent.match(/var\s+htmlFileInfoList\s*=\s*(\[[\s\S]*?\]);/);
+      if (htmlFileInfoListMatch) {
+        const parsed = this.parseJsonWithLogging<any[]>(htmlFileInfoListMatch[1], 'htmlFileInfoList');
+        if (parsed) {
+          (global as any).htmlFileInfoList = parsed;
         }
-        
-        // Extract fil variable if present
-        const filMatch = htmlFileInfoListContent.match(/var\s+fil\s*=\s*(\{[\s\S]*?\});/);
-        if (filMatch) {
-          (global as any).fil = JSON.parse(filMatch[1]);
+      }
+
+      // Extract fil variable if present
+      const filMatch = htmlFileInfoListContent.match(/var\s+fil\s*=\s*(\{[\s\S]*?\});/);
+      if (filMatch) {
+        const parsed = this.parseJsonWithLogging<Record<string, any>>(filMatch[1], 'fil');
+        if (parsed) {
+          (global as any).fil = parsed;
         }
-        
-        // Check if we have either fil array or htmlFileInfoList array
-        if ((global as any).htmlFileInfoList && Array.isArray((global as any).htmlFileInfoList)) {
-          // Convert array to fil object format (index-based)
-          if (!(global as any).fil || Object.keys((global as any).fil).length === 0) {
-            (global as any).fil = {};
-            (global as any).htmlFileInfoList.forEach((item: any, index: number) => {
-              (global as any).fil[index.toString()] = item;
-            });
-          }
+      }
+
+      // Check if we have either fil array or htmlFileInfoList array
+      if ((global as any).htmlFileInfoList && Array.isArray((global as any).htmlFileInfoList)) {
+        // Convert array to fil object format (index-based)
+        if (!(global as any).fil || Object.keys((global as any).fil).length === 0) {
+          (global as any).fil = {};
+          (global as any).htmlFileInfoList.forEach((item: any, index: number) => {
+            (global as any).fil[index.toString()] = item;
+          });
         }
-      } catch (e) {
-        // Skip if file info list has issues
       }
     }
   }
@@ -205,16 +222,14 @@ export class WebHelpIndexLoader {
   processIndexParts(indexParts: string[]): void {
     // Load index parts and capture variables
     indexParts.forEach((part, idx) => {
-      try {
-        // Extract JSON from var assignment, handling multi-line and comments
-        const indexMatch = part.match(/var\s+index(\d+)\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
-        if (indexMatch) {
-          const indexNum = indexMatch[1];
-          const indexData = JSON.parse(indexMatch[2]);
-          (global as any)[`index${indexNum}`] = indexData;
+      // Extract JSON from var assignment, handling multi-line and comments
+      const indexMatch = part.match(/var\s+index(\d+)\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
+      if (indexMatch) {
+        const indexNum = indexMatch[1];
+        const parsed = this.parseJsonWithLogging<Record<string, any>>(indexMatch[2], `index${indexNum}`);
+        if (parsed) {
+          (global as any)[`index${indexNum}`] = parsed;
         }
-      } catch (e) {
-        // Skip failed index parts
       }
     });
 
