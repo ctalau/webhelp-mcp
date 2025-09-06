@@ -24,6 +24,7 @@ const handler = async (
           query: z.string().describe("Search query string (supports boolean operators like AND, OR)"),
         },
         async ({ query }) => {
+          console.log('Tool "search" invoked with params:', { query });
           try {
             // Perform the search (index loading is now handled automatically)
             const result = await searchClient.search(query, baseUrl);
@@ -70,6 +71,7 @@ const handler = async (
           id: z.string().describe("Document ID from search results")
         },
         async ({ id }) => {
+          console.log('Tool "fetch" invoked with params:', { id });
           try {
             const fetchResult = await searchClient.fetchDocumentContent(id, baseUrl);
 
