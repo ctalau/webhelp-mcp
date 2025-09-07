@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 
 export default function HomePage() {
-  const [webhelpUrl, setWebhelpUrl] = useState('https://www.oxygenxml.com/doc/versions/27.1/ug-editor/');
-  const [mcpUrl, setMcpUrl] = useState('');
+  const [webhelpUrls, setWebhelpUrls] = useState<string[]>([
+    'https://www.oxygenxml.com/doc/versions/27.1/ug-editor/',
+  ]);
+  const [mcpUrls, setMcpUrls] = useState('');
   const [copyText, setCopyText] = useState('Copy');
   const [baseUrl, setBaseUrl] = useState('');
 
@@ -15,28 +17,43 @@ export default function HomePage() {
 
   useEffect(() => {
     if (baseUrl) {
-      generateMCPUrl(webhelpUrl);
+      generateMCPUrls(webhelpUrls);
     }
-  }, [webhelpUrl, baseUrl]);
+  }, [webhelpUrls, baseUrl]);
 
-  function generateMCPUrl(urlStr: string) {
-    if (!urlStr) {
-      setMcpUrl('');
+  function generateMCPUrls(urls: string[]) {
+    const trimmed = urls.map((u) => u.trim()).filter(Boolean);
+    if (trimmed.length === 0) {
+      setMcpUrls('');
       return;
     }
     try {
-      const url = new URL(urlStr);
-      const pathWithoutProtocol = url.hostname + url.pathname;
-      const mcp = `${baseUrl.replace(/\/$/, '')}/${pathWithoutProtocol}`;
-      setMcpUrl(mcp);
+      const mcp = trimmed
+        .map((u) => {
+          const url = new URL(u);
+          const pathWithoutProtocol = url.hostname + url.pathname;
+          return `${baseUrl.replace(/\/$/, '')}/${pathWithoutProtocol}`;
+        })
+        .join('\n');
+      setMcpUrls(mcp);
     } catch {
-      setMcpUrl('Please enter a valid URL');
+      setMcpUrls('Please enter a valid URL');
     }
   }
 
+  const addUrlField = () => setWebhelpUrls([...webhelpUrls, '']);
+  const updateUrl = (index: number, value: string) => {
+    const newUrls = [...webhelpUrls];
+    newUrls[index] = value;
+    setWebhelpUrls(newUrls);
+  };
+  const removeUrlField = (index: number) => {
+    setWebhelpUrls(webhelpUrls.filter((_, i) => i !== index));
+  };
+
   const copyToClipboard = () => {
-    if (mcpUrl && mcpUrl !== 'Please enter a valid URL') {
-      navigator.clipboard.writeText(mcpUrl).then(() => {
+    if (mcpUrls && mcpUrls !== 'Please enter a valid URL') {
+      navigator.clipboard.writeText(mcpUrls).then(() => {
         setCopyText('Copied!');
         setTimeout(() => setCopyText('Copy'), 2000);
       });
@@ -132,7 +149,7 @@ export default function HomePage() {
               Build Your MCP Server URL
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Enter your WebHelp documentation URL and we'll generate your MCP server endpoint instantly
+              Enter your WebHelp documentation URLs and we'll generate your MCP server endpoints instantly
             </p>
           </div>
 
@@ -140,29 +157,46 @@ export default function HomePage() {
             <div className="glass-effect rounded-2xl p-8 shadow-2xl">
               <div className="mb-6">
                 <label className="block text-lg font-semibold mb-3 text-blue-300">
-                  Your WebHelp Documentation URL
+                  Your WebHelp Documentation URLs
                 </label>
-                <input
-                  type="url"
-                  id="webhelpUrl"
-                  placeholder="https://www.oxygenxml.com/doc/versions/27.1/ug-editor/"
-                  className="w-full px-6 py-4 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300 text-lg"
-                  value={webhelpUrl}
-                  onChange={(e) => setWebhelpUrl(e.target.value)}
-                />
+                {webhelpUrls.map((url, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="https://www.oxygenxml.com/doc/versions/27.1/ug-editor/"
+                      className="w-full px-6 py-4 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300 text-lg"
+                      value={url}
+                      onChange={(e) => updateUrl(index, e.target.value)}
+                    />
+                    {webhelpUrls.length > 1 && (
+                      <button
+                        onClick={() => removeUrlField(index)}
+                        className="px-4 py-2 bg-red-600 rounded-xl text-white hover:bg-red-700 transition-colors duration-300"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={addUrlField}
+                  className="px-4 py-2 bg-blue-600 rounded-xl text-white hover:bg-blue-700 transition-colors duration-300"
+                >
+                  Add URL
+                </button>
               </div>
 
               <div className="mb-6">
                 <label className="block text-lg font-semibold mb-3 text-green-300">
-                  Generated MCP Server URL
+                  Generated MCP Server URLs
                 </label>
-                <input
-                  type="text"
-                  id="mcpUrl"
+                <textarea
+                  id="mcpUrls"
                   readOnly
-                  placeholder="Your MCP server URL will appear here..."
+                  placeholder="Your MCP server URLs will appear here..."
                   className="w-full px-6 py-4 bg-gray-900 border border-gray-600 rounded-xl text-green-400 placeholder-gray-500 focus:outline-none text-lg font-mono"
-                  value={mcpUrl}
+                  rows={3}
+                  value={mcpUrls}
                 />
               </div>
 
