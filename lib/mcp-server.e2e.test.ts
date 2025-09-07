@@ -1,0 +1,65 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { spawn } from 'node:child_process';
+import { once } from 'node:events';
+import { Client } from '@modelcontextprotocol/sdk/client';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp';
+
+const WEBHELP_ENDPOINT = 'www.oxygenxml.com/doc/versions/27.1/ug-editor';
+
+async function startNextServer(): Promise<{ port: number; stop: () => Promise<void> }> {
+  const proc = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '0'], {
+    cwd: process.cwd(),
+    stdio: ['ignore', 'pipe', 'inherit'],
+    env: { ...process.env, NEXT_TELEMETRY_DISABLED: '1' },
+  });
+
+  const port = await new Promise<number>((resolve, reject) => {
+    proc.stdout.on('data', (chunk: Buffer) => {
+      const m = chunk.toString().match(/localhost:(\d+)/);
+      if (m) {
+        resolve(parseInt(m[1], 10));
+      }
+    });
+    proc.once('error', reject);
+    proc.once('exit', (code) => reject(new Error(`next dev exited with code ${code}`)));
+  });
+
+  return {
+    port,
+    stop: async () => {
+      proc.kill();
+      await once(proc, 'exit');
+    },
+  };
+}
+
+test('mcp server search and fetch tools', async () => {
+  const { port, stop } = await startNextServer();
+
+  const transport = new StreamableHTTPClientTransport(
+    `http://localhost:${port}/${WEBHELP_ENDPOINT}`
+  );
+  const client = new Client({ name: 'e2e-test-client', version: '1.0.0' });
+  await client.connect(transport);
+
+  const searchResp = await client.callTool({ name: 'search', arguments: { query: 'wsdl' } });
+  assert.ok(searchResp.content && searchResp.content.length > 0, 'search returned content');
+  const searchResults = JSON.parse(searchResp.content[0].text);
+  assert.ok(Array.isArray(searchResults) && searchResults.length > 0, 'expected search results');
+
+  const first = searchResults[0];
+  assert.ok(first && first.id, 'first result should have an id');
+
+  const fetchResp = await client.callTool({ name: 'fetch', arguments: { id: first.id } });
+  assert.ok(fetchResp.content && fetchResp.content.length > 0, 'fetch returned content');
+  const doc = JSON.parse(fetchResp.content[0].text);
+  const snippet =
+    'You can use Oxygen XML Editor to generate detailed documentation for the components ' +
+    'of a WSDL document in HTML format.';
+  assert.ok(doc.text.includes(snippet), `document should include snippet: ${snippet}`);
+
+  await client.close();
+  await stop();
+});
+
