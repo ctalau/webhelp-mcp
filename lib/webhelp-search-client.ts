@@ -55,16 +55,9 @@ export class WebHelpSearchClient {
         };
       }
 
-      if (!(global as any).performSearch) {
-        return {
-          error: 'Search engine not loaded properly - performSearch function not found',
-          results: []
-        };
-      }
-
       try {
         let result: any = null;
-        (global as any).performSearch(query, function(r: any) {
+        this.indexLoader.performSearch(query, function(r: any) {
           result = r;
         });
         const idx = this.baseUrls.indexOf(url);
