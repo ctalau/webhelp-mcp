@@ -43,11 +43,9 @@ considered before making it publicly available:
   to reach internal or otherwise restricted resources.
 - **Resource exhaustion** – large or repeated queries may consume significant
   CPU, memory or bandwidth and degrade the host system.
-- **Untrusted content** – the server transforms external HTML into Markdown
-  and returns it to the requester. Malicious markup could be relayed to clients
-  if additional sanitization is not performed.
+- **Remote code execution** – the JS file that uses the index to provide search results is fetched from the WebHelp deployment and executed in the server.
 
-Apply network controls, rate limiting and request validation when running your
+Apply network controls, rate limiting and deployment whitelisting when running your
 own deployment.
 
 ## License
