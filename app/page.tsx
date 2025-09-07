@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react';
 
 export default function HomePage() {
-  const [webhelpUrl, setWebhelpUrl] = useState('https://www.oxygenxml.com/doc/versions/27.1/ug-editor/');
-  const [mcpUrl, setMcpUrl] = useState('');
+  const [webhelpUrls, setWebhelpUrls] = useState<string[]>([
+    'https://www.oxygenxml.com/doc/versions/27.1/ug-editor/',
+  ]);
+  const [mcpUrls, setMcpUrls] = useState('');
   const [copyText, setCopyText] = useState('Copy');
   const [baseUrl, setBaseUrl] = useState('');
 
@@ -15,28 +17,46 @@ export default function HomePage() {
 
   useEffect(() => {
     if (baseUrl) {
-      generateMCPUrl(webhelpUrl);
+      generateMCPUrls(webhelpUrls);
     }
-  }, [webhelpUrl, baseUrl]);
+  }, [webhelpUrls, baseUrl]);
 
-  function generateMCPUrl(urlStr: string) {
-    if (!urlStr) {
-      setMcpUrl('');
+  function generateMCPUrls(urls: string[]) {
+    const trimmed = urls.map((u) => u.trim()).filter(Boolean);
+    if (trimmed.length === 0) {
+      setMcpUrls('');
       return;
     }
     try {
-      const url = new URL(urlStr);
-      const pathWithoutProtocol = url.hostname + url.pathname;
-      const mcp = `${baseUrl.replace(/\/$/, '')}/${pathWithoutProtocol}`;
-      setMcpUrl(mcp);
+      const mcp = trimmed
+        .map((u) => {
+          const url = new URL(u);
+          const pathWithoutProtocol = url.hostname + url.pathname;
+          return `${baseUrl.replace(/\/$/, '')}/${pathWithoutProtocol}`;
+        })
+        .join('\n');
+      setMcpUrls(mcp);
     } catch {
-      setMcpUrl('Please enter a valid URL');
+      setMcpUrls('Please enter a valid URL');
     }
   }
 
+  const addUrlField = () => {
+    alert('Work in progress');
+    setWebhelpUrls([...webhelpUrls, '']);
+  };
+  const updateUrl = (index: number, value: string) => {
+    const newUrls = [...webhelpUrls];
+    newUrls[index] = value;
+    setWebhelpUrls(newUrls);
+  };
+  const removeUrlField = (index: number) => {
+    setWebhelpUrls(webhelpUrls.filter((_, i) => i !== index));
+  };
+
   const copyToClipboard = () => {
-    if (mcpUrl && mcpUrl !== 'Please enter a valid URL') {
-      navigator.clipboard.writeText(mcpUrl).then(() => {
+    if (mcpUrls && mcpUrls !== 'Please enter a valid URL') {
+      navigator.clipboard.writeText(mcpUrls).then(() => {
         setCopyText('Copied!');
         setTimeout(() => setCopyText('Copy'), 2000);
       });
@@ -112,13 +132,13 @@ export default function HomePage() {
               onClick={scrollToBuilder}
               className="px-8 py-4 bg-white text-blue-600 rounded-full font-semibold text-lg hover:bg-blue-50 transform hover:scale-105 transition-all duration-300 shadow-2xl"
             >
-              Build Your Server URL
+              Generate MCP endpoint
             </button>
             <button
               onClick={scrollToSteps}
               className="px-8 py-4 glass-effect rounded-full font-semibold text-lg hover:bg-white hover:bg-opacity-20 transform hover:scale-105 transition-all duration-300"
             >
-              Learn How It Works
+              Build URL Manually
             </button>
           </div>
         </div>
@@ -129,10 +149,10 @@ export default function HomePage() {
         <div className="container mx-auto px-6">
           <div className="text-center mb-16 animate-fade-in">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-              Build Your MCP Server URL
+              Generate MCP endpoint
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Enter your WebHelp documentation URL and we'll generate your MCP server endpoint instantly
+              Enter your WebHelp documentation URLs and we'll generate your MCP server endpoint instantly
             </p>
           </div>
 
@@ -140,29 +160,59 @@ export default function HomePage() {
             <div className="glass-effect rounded-2xl p-8 shadow-2xl">
               <div className="mb-6">
                 <label className="block text-lg font-semibold mb-3 text-blue-300">
-                  Your WebHelp Documentation URL
+                  Your WebHelp Documentation URLs
                 </label>
-                <input
-                  type="url"
-                  id="webhelpUrl"
-                  placeholder="https://www.oxygenxml.com/doc/versions/27.1/ug-editor/"
-                  className="w-full px-6 py-4 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300 text-lg"
-                  value={webhelpUrl}
-                  onChange={(e) => setWebhelpUrl(e.target.value)}
-                />
+                {webhelpUrls.map((url, index) => (
+                  <div key={index} className="flex items-center gap-2 mb-2">
+                    <input
+                      type="text"
+                      placeholder="https://www.oxygenxml.com/doc/versions/27.1/ug-editor/"
+                      className="w-full px-6 py-4 bg-gray-700 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all duration-300 text-lg"
+                      value={url}
+                      onChange={(e) => updateUrl(index, e.target.value)}
+                    />
+                    {webhelpUrls.length > 1 && (
+                      <button
+                        onClick={() => removeUrlField(index)}
+                        className="p-2 bg-red-600 rounded-xl text-white hover:bg-red-700 transition-colors duration-300"
+                        aria-label="Remove URL"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  onClick={addUrlField}
+                  className="px-4 py-2 bg-blue-600 rounded-xl text-white hover:bg-blue-700 transition-colors duration-300"
+                >
+                  Add URL
+                </button>
               </div>
 
               <div className="mb-6">
                 <label className="block text-lg font-semibold mb-3 text-green-300">
-                  Generated MCP Server URL
+                  Generated MCP endpoint
                 </label>
-                <input
-                  type="text"
-                  id="mcpUrl"
+                <textarea
+                  id="mcpUrls"
                   readOnly
-                  placeholder="Your MCP server URL will appear here..."
+                  placeholder="Your MCP endpoint will appear here..."
                   className="w-full px-6 py-4 bg-gray-900 border border-gray-600 rounded-xl text-green-400 placeholder-gray-500 focus:outline-none text-lg font-mono"
-                  value={mcpUrl}
+                  rows={3}
+                  value={mcpUrls}
                 />
               </div>
 
@@ -184,15 +234,15 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* How It Works Section */}
+      {/* Building the URL manually Section */}
       <div id="steps" className="py-20 bg-gray-900">
         <div className="container mx-auto px-6">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              How It Works
+              Building the URL manually
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Follow these steps to create your MCP server URL
+              Follow these steps to build your MCP endpoint manually
             </p>
           </div>
 
@@ -289,12 +339,12 @@ export default function HomePage() {
             <div className="text-center p-8 glass-effect rounded-2xl hover:bg-white hover:bg-opacity-10 transition-all duration-300 transform hover:scale-105">
               <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
                 <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-blue-300">Lightning Fast</h3>
+              <h3 className="text-2xl font-bold mb-4 text-blue-300">Federated search</h3>
               <p className="text-gray-300 leading-relaxed">
-                Instant server generation for seamless documentation access from AI tools.
+                Search across multiple WebHelp deployments with a single query.
               </p>
             </div>
 
@@ -316,19 +366,18 @@ export default function HomePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold mb-4 text-purple-300">
-                <a
-                  href="https://github.com/ctalau/webhelp-mcp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  Open Source
-                </a>
-              </h3>
+              <h3 className="text-2xl font-bold mb-4 text-purple-300">Open Source</h3>
               <p className="text-gray-300 leading-relaxed">
                 Deploy your own server and customize it for your needs.
               </p>
+              <a
+                href="https://github.com/ctalau/webhelp-mcp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline block mt-2 text-gray-300"
+              >
+                Fork it on GitHub
+              </a>
             </div>
           </div>
         </div>
