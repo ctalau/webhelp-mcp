@@ -4,131 +4,113 @@ import { JSDOM } from 'jsdom';
 import { WebHelpIndexLoader } from './webhelp-index-loader';
 
 export interface SearchResult {
-  query: string;
-  originalQuery: string;
-  excluded: string[];
   error?: string;
-  isPhraseSearch: boolean;
-  resultCount: number;
   results: Array<{
     id: string;
     title: string;
-    path: string;
-    description: string;
+    url: string;
     score: number;
-    words: string[];
   }>;
 }
 
 export class WebHelpSearchClient {
   private indexLoader: WebHelpIndexLoader;
-  public baseUrl?: string;
+  private baseUrls: string[];
 
   constructor() {
     this.indexLoader = new WebHelpIndexLoader();
+    this.baseUrls = [];
   }
 
   async loadIndex(baseUrl: string): Promise<void> {
     await this.indexLoader.loadIndex(baseUrl);
-    this.baseUrl = baseUrl;
+    if (!this.baseUrls.includes(baseUrl)) {
+      this.baseUrls.push(baseUrl);
+    }
   }
 
-  async search(query: string, baseUrl?: string): Promise<SearchResult> {
-    const indexUrl = baseUrl || this.baseUrl;
+  async search(query: string, baseUrls?: string | string[]): Promise<SearchResult> {
+    const urls = baseUrls
+      ? Array.isArray(baseUrls)
+        ? baseUrls
+        : [baseUrls]
+      : this.baseUrls;
 
-    if (!indexUrl) {
+    if (urls.length === 0) {
       return {
         error: 'No base URL provided for search index',
-        query: query,
-        originalQuery: query,
-        excluded: [],
-        isPhraseSearch: false,
-        resultCount: 0,
         results: []
       };
     }
 
-    // Load index if not already loaded or base URL changed
-    if (!this.baseUrl || this.baseUrl !== indexUrl) {
+    const mergedResults: SearchResult['results'] = [];
+
+    for (const url of urls) {
       try {
-        await this.loadIndex(indexUrl);
+        await this.loadIndex(url);
       } catch (error: any) {
         return {
           error: `Failed to load index: ${error.message}`,
-          query: query,
-          originalQuery: query,
-          excluded: [],
-          isPhraseSearch: false,
-          resultCount: 0,
+          results: []
+        };
+      }
+
+      if (!(global as any).performSearch) {
+        return {
+          error: 'Search engine not loaded properly - performSearch function not found',
+          results: []
+        };
+      }
+
+      try {
+        let result: any = null;
+        (global as any).performSearch(query, function(r: any) {
+          result = r;
+        });
+        const idx = this.baseUrls.indexOf(url);
+        const formatted = this.formatSearchResult(result, url, idx);
+        if (formatted.error) {
+          return { error: formatted.error, results: [] };
+        }
+        mergedResults.push(...formatted.results);
+      } catch (error: any) {
+        return {
+          error: `Search error: ${error.message}`,
           results: []
         };
       }
     }
 
-    if (!(global as any).performSearch) {
-      return {
-        error: 'Search engine not loaded properly - performSearch function not found',
-        query: query,
-        originalQuery: query,
-        excluded: [],
-        isPhraseSearch: false,
-        resultCount: 0,
-        results: []
-      };
-    }
+    mergedResults.sort((a, b) => b.score - a.score);
 
-    try {
-      let result = null;
-      (global as any).performSearch(query, function(searchResult: any) {
-        result = searchResult;
-      });
-      return this.formatSearchResult(result);
-    } catch (error: any) {
-      return {
-        error: `Search error: ${error.message}`,
-        query: query,
-        originalQuery: query,
-        excluded: [],
-        isPhraseSearch: false,
-        resultCount: 0,
-        results: []
-      };
-    }
+    return { results: mergedResults };
   }
 
-  private formatSearchResult(searchResult: any): SearchResult {
+  private formatSearchResult(searchResult: any, baseUrl: string, index: number): SearchResult {
     return {
-      query: searchResult.searchExpression || searchResult.originalSearchExpression,
-      originalQuery: searchResult.originalSearchExpression,
-      excluded: searchResult.excluded || [],
       error: searchResult.error,
-      isPhraseSearch: searchResult.isPhraseSearch,
-      resultCount: searchResult.documents ? searchResult.documents.length : 0,
       results: (searchResult.documents || []).map((doc: any) => ({
-        id: doc.topicID,
+        id: `${index}:${doc.relativePath}`,
         title: doc.title,
-        path: doc.relativePath,
-        description: doc.shortDescription,
-        score: doc.scoring,
-        words: doc.words
+        url: `${baseUrl}${doc.relativePath}`,
+        score: doc.scoring
       }))
     };
   }
 
   /**
    * Fetch the content of a document by its ID
-   * @param documentId - The ID of the document to fetch - its relative path
-   * @param baseUrl - The base URL of the WebHelp documentation
+   * @param documentId - The ID of the document to fetch (index:path)
    * @returns The content of the document
    */
-  async fetchDocumentContent(documentId: string, baseUrl?: string): Promise<{
+  async fetchDocumentContent(documentId: string): Promise<{
     id: string;
     title: string;
     text: string;
     url: string;
     metadata?: any;
   }> {
-    let fullUrl = `${baseUrl}/${documentId}`;
+    const fullUrl = this.resolveDocumentUrl(documentId);
     let htmlContent = await downloadFile(fullUrl);
     
     // Extract just the article element
@@ -148,7 +130,17 @@ export class WebHelpSearchClient {
       title: this.extractTitleFromContent(htmlContent) || documentId,
       text: markdownContent,
       url: fullUrl
+    };
+  }
+
+  private resolveDocumentUrl(documentId: string): string {
+    const [indexStr, ...pathParts] = documentId.split(':');
+    const baseUrl = this.baseUrls[Number(indexStr)];
+    if (!baseUrl) {
+      throw new Error(`Unknown base URL index: ${indexStr}`);
     }
+    const path = pathParts.join(':');
+    return `${baseUrl}${path}`;
   }
 
   extractTitleFromContent(content: string): string {

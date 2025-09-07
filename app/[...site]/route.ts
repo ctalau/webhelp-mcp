@@ -44,8 +44,8 @@ const handler = async (
             const topResults = result.results.slice(0, maxResultsToUse);
             let results = topResults.map((doc: any) => ({
                 title: doc.title,
-                id: doc.path,
-                url: `${baseUrl}${doc.path}`
+                id: doc.id,
+                url: doc.url
               }));
             return {
               content: [{
@@ -73,7 +73,7 @@ const handler = async (
         async ({ id }) => {
           console.log('Tool "fetch" invoked with params:', { id });
           try {
-            const fetchResult = await searchClient.fetchDocumentContent(id, baseUrl);
+            const fetchResult = await searchClient.fetchDocumentContent(id);
 
             return {
               content: [{
