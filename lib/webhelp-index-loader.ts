@@ -21,6 +21,7 @@ export interface SearchIndex {
 
 export class WebHelpIndexLoader {
   private baseUrl: string = '';
+  private searchContext: any = {};
 
   private parseJsonWithLogging<T>(json: string, context: string): T | null {
     try {
@@ -42,7 +43,7 @@ export class WebHelpIndexLoader {
     const indexParts: string[] = [];
     for (let i = 1; i <= 10; i++) {
       let loaded = false;
-      
+
       // Try index/ subdirectory first
       try {
         const part = await downloadFile(`${searchUrl}/index/index-${i}.js`);
@@ -58,7 +59,7 @@ export class WebHelpIndexLoader {
           // No more index parts
         }
       }
-      
+
       if (!loaded) break;
     }
     return indexParts;
@@ -73,7 +74,7 @@ export class WebHelpIndexLoader {
     ];
 
     const loadedFiles: any = {};
-    
+
     for (const file of metaFiles) {
       try {
         loadedFiles[file.var] = await downloadFile(`${searchUrl}/index/${file.name}`);
@@ -85,187 +86,201 @@ export class WebHelpIndexLoader {
         }
       }
     }
-    
+
     return loadedFiles as MetadataFiles;
   }
 
-  setupGlobalEnvironment(): void {
-    // Create a sandbox-like global environment
-    (global as any).w = {};
-    (global as any).fil = {};
-    (global as any).stopWords = [];
-    (global as any).linkToParent = {};
-    (global as any).indexerLanguage = 'en';
-    (global as any).doStem = false;
-    (global as any).stemmer = null;
-    
-    // Debug/console functions for the library
-    (global as any).debug = function() {};
-    (global as any).warn = function() {};
-    (global as any).info = function() {};
+  private setupSearchContext(): void {
+    // Create an isolated context object instead of polluting global
+    this.searchContext = {
+      w: {},
+      fil: {},
+      stopWords: [],
+      linkToParent: {},
+      indexerLanguage: 'en',
+      doStem: false,
+      stemmer: null,
 
-    // Utility functions used by the search library
-    (global as any).trim = function(str: string, chars?: string) {
-      chars = chars || "\\s";
-      return str.replace(new RegExp("^[" + chars + "]+", "g"), "")
-                .replace(new RegExp("[" + chars + "]+$", "g"), "");
-    };
+      // Debug/console functions for the library
+      debug: function() {},
+      warn: function() {},
+      info: function() {},
 
-    (global as any).contains = function(arrayOfWords: string[], word: string) {
-      for (const w in arrayOfWords) {
-        if (arrayOfWords[w] === word) {
-          return true;
+      // Utility functions used by the search library
+      trim: function(str: string, chars?: string) {
+        chars = chars || "\\s";
+        return str.replace(new RegExp("^[" + chars + "]+", "g"), "")
+                  .replace(new RegExp("[" + chars + "]+$", "g"), "");
+      },
+
+      contains: function(arrayOfWords: string[], word: string) {
+        for (const w in arrayOfWords) {
+          if (arrayOfWords[w] === word) {
+            return true;
+          }
         }
-      }
-      return false;
-    };
+        return false;
+      },
 
-    (global as any).inArray = function(needle: any, haystack: any[]) {
-      for (let i = 0; i < haystack.length; i++) {
-        if (haystack[i] == needle) return true;
+      inArray: function(needle: any, haystack: any[]) {
+        for (let i = 0; i < haystack.length; i++) {
+          if (haystack[i] == needle) return true;
+        }
+        return false;
       }
-      return false;
     };
   }
 
-  processStopwords(stopwordsContent: string): void {
+  private processStopwords(stopwordsContent: string): void {
     if (stopwordsContent) {
-      // Extract JSON from var assignment
       const jsonMatch = stopwordsContent.match(/var\s+stopwords\s*=\s*(\[[\s\S]*?\]);?\s*(?:\/\/.*)?$/);
       if (jsonMatch) {
         const parsed = this.parseJsonWithLogging<any[]>(jsonMatch[1], 'stopwords');
         if (parsed) {
-          (global as any).stopwords = parsed;
-          (global as any).stopWords = parsed;
+          this.searchContext.stopwords = parsed;
+          this.searchContext.stopWords = parsed;
         }
       }
     }
   }
 
-  processLinkToParent(linkToParentContent: string): void {
+  private processLinkToParent(linkToParentContent: string): void {
     if (linkToParentContent) {
-      // Extract JSON from var assignment
       const jsonMatch = linkToParentContent.match(/var\s+linkToParent\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
       if (jsonMatch) {
         const parsed = this.parseJsonWithLogging<Record<string, any>>(jsonMatch[1], 'linkToParent');
         if (parsed) {
-          (global as any).linkToParent = parsed;
+          this.searchContext.linkToParent = parsed;
         }
       }
     }
   }
 
-  processKeywords(keywordsContent: string): void {
+  private processKeywords(keywordsContent: string): void {
     if (keywordsContent) {
-      // Extract keywords variable
       const keywordsMatch = keywordsContent.match(/var\s+keywords\s*=\s*(\[[\s\S]*?\]);/);
       if (keywordsMatch) {
         const parsed = this.parseJsonWithLogging<any[]>(keywordsMatch[1], 'keywords');
         if (parsed) {
-          (global as any).keywords = parsed;
+          this.searchContext.keywords = parsed;
         }
       }
 
-      // Extract ph variable
       const phMatch = keywordsContent.match(/var\s+ph\s*=\s*(\{[\s\S]*?\});/);
       if (phMatch) {
         const parsed = this.parseJsonWithLogging<Record<string, any>>(phMatch[1], 'ph');
         if (parsed) {
-          (global as any).ph = parsed;
+          this.searchContext.ph = parsed;
         }
       }
 
-      // Extract keywordsInfo variable
       const keywordsInfoMatch = keywordsContent.match(/var\s+keywordsInfo\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
       if (keywordsInfoMatch) {
         const parsed = this.parseJsonWithLogging<Record<string, any>>(keywordsInfoMatch[1], 'keywordsInfo');
         if (parsed) {
-          (global as any).keywordsInfo = parsed;
+          this.searchContext.keywordsInfo = parsed;
         }
       }
     }
   }
 
-  processFileInfoList(htmlFileInfoListContent: string): void {
+  private processFileInfoList(htmlFileInfoListContent: string): void {
     if (htmlFileInfoListContent) {
-      // Extract htmlFileInfoList variable
       const htmlFileInfoListMatch = htmlFileInfoListContent.match(/var\s+htmlFileInfoList\s*=\s*(\[[\s\S]*?\]);/);
       if (htmlFileInfoListMatch) {
         const parsed = this.parseJsonWithLogging<any[]>(htmlFileInfoListMatch[1], 'htmlFileInfoList');
         if (parsed) {
-          (global as any).htmlFileInfoList = parsed;
+          this.searchContext.htmlFileInfoList = parsed;
         }
       }
 
-      // Extract fil variable if present
       const filMatch = htmlFileInfoListContent.match(/var\s+fil\s*=\s*(\{[\s\S]*?\});/);
       if (filMatch) {
         const parsed = this.parseJsonWithLogging<Record<string, any>>(filMatch[1], 'fil');
         if (parsed) {
-          (global as any).fil = parsed;
+          this.searchContext.fil = parsed;
         }
       }
 
-      // Check if we have either fil array or htmlFileInfoList array
-      if ((global as any).htmlFileInfoList && Array.isArray((global as any).htmlFileInfoList)) {
-        // Convert array to fil object format (index-based)
-        if (!(global as any).fil || Object.keys((global as any).fil).length === 0) {
-          (global as any).fil = {};
-          (global as any).htmlFileInfoList.forEach((item: any, index: number) => {
-            (global as any).fil[index.toString()] = item;
+      if (this.searchContext.htmlFileInfoList && Array.isArray(this.searchContext.htmlFileInfoList)) {
+        if (!this.searchContext.fil || Object.keys(this.searchContext.fil).length === 0) {
+          this.searchContext.fil = {};
+          this.searchContext.htmlFileInfoList.forEach((item: any, index: number) => {
+            this.searchContext.fil[index.toString()] = item;
           });
         }
       }
     }
   }
 
-  processIndexParts(indexParts: string[]): void {
-    // Load index parts and capture variables
+  private processIndexParts(indexParts: string[]): void {
     indexParts.forEach((part, idx) => {
-      // Extract JSON from var assignment, handling multi-line and comments
       const indexMatch = part.match(/var\s+index(\d+)\s*=\s*(\{[\s\S]*?\});?\s*(?:\/\/.*)?$/);
       if (indexMatch) {
         const indexNum = indexMatch[1];
         const parsed = this.parseJsonWithLogging<Record<string, any>>(indexMatch[2], `index${indexNum}`);
         if (parsed) {
-          (global as any)[`index${indexNum}`] = parsed;
+          this.searchContext[`index${indexNum}`] = parsed;
         }
       }
     });
 
-    // Combine all index objects into the main w object
     const allWords: Record<string, any> = {};
     for (let i = 1; i <= indexParts.length; i++) {
       const indexVar = `index${i}`;
-      if ((global as any)[indexVar] && typeof (global as any)[indexVar] === 'object') {
-        Object.assign(allWords, (global as any)[indexVar]);
+      if (this.searchContext[indexVar] && typeof this.searchContext[indexVar] === 'object') {
+        Object.assign(allWords, this.searchContext[indexVar]);
       }
     }
-    
-    // Also include any words directly added to global.w
-    if ((global as any).w && typeof (global as any).w === 'object') {
-      Object.assign(allWords, (global as any).w);
+
+    if (this.searchContext.w && typeof this.searchContext.w === 'object') {
+      Object.assign(allWords, this.searchContext.w);
     }
-    
-    (global as any).w = allWords;
+
+    this.searchContext.w = allWords;
   }
 
-  initializeSearchEngine(nwSearchFntJs: string): void {
+  private initializeSearchEngine(nwSearchFntJs: string): void {
     try {
-      // Transform function declaration to global assignment
-      const transformedSearchFnt = nwSearchFntJs.replace(
-        /^function\s+nwSearchFnt\s*\(/m, 
-        'global.nwSearchFnt = function('
-      );
-      eval(transformedSearchFnt);
+      // Create a sandboxed evaluation context
+      const evalContext = (function(context: any) {
+        // Create a function that evaluates the search engine code with our context
+        const evalCode = `
+          (function(context) {
+            // Map context variables to local scope for the search engine
+            var w = context.w;
+            var fil = context.fil;
+            var stopWords = context.stopWords;
+            var linkToParent = context.linkToParent;
+            var indexerLanguage = context.indexerLanguage;
+            var doStem = context.doStem;
+            var stemmer = context.stemmer;
+            var trim = context.trim;
+            var contains = context.contains;
+            var inArray = context.inArray;
+            
+            // Define nwSearchFnt in our context
+            ${nwSearchFntJs}
+            
+            // Return the constructor
+            return nwSearchFnt;
+          })(arguments[0]);
+        `;
+
+        return eval(evalCode);
+      })(this.searchContext);
+
+      // Store the constructor in our context
+      this.searchContext.nwSearchFnt = evalContext;
+
     } catch (evalError: any) {
       throw new Error('Error evaluating nwSearchFnt.js: ' + evalError.message);
     }
-    
+
     // Initialize the search engine
-    if (typeof (global as any).nwSearchFnt === 'function') {
+    if (typeof this.searchContext.nwSearchFnt === 'function') {
       // Create options mock
-      (global as any).options = {
+      this.searchContext.options = {
         get: function(key: string) {
           const defaults: Record<string, any> = {
             'webhelp.search.default.operator': 'or',
@@ -277,67 +292,85 @@ export class WebHelpIndexLoader {
         getBoolean: function(key: string) {
           return this.get(key) === true || this.get(key) === 'true';
         },
-        getIndexerLanguage: function() {
-          return (global as any).indexerLanguage || 'en';
+        getIndexerLanguage: () => {
+          return this.searchContext.indexerLanguage || 'en';
         }
       };
 
       // Create utility mock
-      (global as any).util = {
+      this.searchContext.util = {
         debug: function() {}
       };
 
       // Ensure we have a proper index object structure
-      if (!(global as any).index) {
-        (global as any).index = {
-          w: (global as any).w || {},
-          fil: (global as any).fil || {},
-          stopWords: (global as any).stopWords || [],
-          link2parent: (global as any).linkToParent || {}
+      if (!this.searchContext.index) {
+        this.searchContext.index = {
+          w: this.searchContext.w || {},
+          fil: this.searchContext.fil || {},
+          stopWords: this.searchContext.stopWords || [],
+          link2parent: this.searchContext.linkToParent || {}
         };
       } else {
-        // Make sure our fil object is in the index
-        (global as any).index.fil = (global as any).fil || (global as any).index.fil || {};
+        this.searchContext.index.fil = this.searchContext.fil || this.searchContext.index.fil || {};
       }
 
       // Create the search engine instance
-      (global as any).searchEngine = new (global as any).nwSearchFnt((global as any).index, (global as any).options, (global as any).stemmer, (global as any).util);
+      this.searchContext.searchEngine = new this.searchContext.nwSearchFnt(
+        this.searchContext.index, 
+        this.searchContext.options, 
+        this.searchContext.stemmer, 
+        this.searchContext.util
+      );
       
       // Expose performSearch if it exists
-      if ((global as any).searchEngine && typeof (global as any).searchEngine.performSearch === 'function') {
-        (global as any).performSearch = (global as any).searchEngine.performSearch.bind((global as any).searchEngine);
+      if (this.searchContext.searchEngine && typeof this.searchContext.searchEngine.performSearch === 'function') {
+        this.searchContext.performSearch = this.searchContext.searchEngine.performSearch.bind(this.searchContext.searchEngine);
       }
     }
   }
 
   async loadIndex(baseUrl: string): Promise<void> {
-    // Auto-discover the search directory
     const searchUrl = `${baseUrl.replace(/\/$/, '')}/oxygen-webhelp/app/search`;
     this.baseUrl = searchUrl + '/';
     
     try {
-      // Setup global environment
-      this.setupGlobalEnvironment();
+      // Setup isolated context instead of global
+      this.setupSearchContext();
 
       // Download all files
       const nwSearchFntJs = await this.downloadSearchEngine(searchUrl);
       const indexParts = await this.downloadIndexParts(searchUrl);
       const metadataFiles = await this.downloadMetadataFiles(searchUrl);
 
-      // Process metadata files
+      // Process metadata files into our context
       this.processStopwords(metadataFiles.stopwords);
       this.processLinkToParent(metadataFiles.linkToParent);
       this.processKeywords(metadataFiles.keywords);
       this.processFileInfoList(metadataFiles.htmlFileInfoList);
 
-      // Process index files
+      // Process index files into our context
       this.processIndexParts(indexParts);
 
-      // Initialize search engine
+      // Initialize search engine with our context
       this.initializeSearchEngine(nwSearchFntJs);
       
     } catch (error: any) {
       throw new Error(`Failed to load search index: ${error.message}`);
     }
   }
+  
+  // Public method to perform searches using the loaded index
+  performSearch(query: string, callback: (result: any) => void): void {
+    if (this.searchContext.performSearch) {
+      this.searchContext.performSearch(query, callback);
+    } else {
+      throw new Error('Search engine not initialized. Call loadIndex() first.');
+    }
+  }
+  
+  // Getter to access the search context if needed
+  getSearchContext(): any {
+    return this.searchContext;
+  }
 }
+
