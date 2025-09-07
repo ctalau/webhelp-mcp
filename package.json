@@ -7,7 +7,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "tsx --test lib/url-pack.test.ts lib/webhelp-search-client.test.ts"
+    "test": "tsx --test lib/*.test.ts"
   },
   "keywords": [
     "webhelp",
