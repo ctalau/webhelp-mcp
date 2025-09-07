@@ -22,7 +22,6 @@ export interface SearchResult {
 
 export class WebHelpSearchClient {
   private indexLoader: WebHelpIndexLoader;
-  private indexCache: Map<string, boolean> = new Map();
   public baseUrl?: string;
 
   constructor() {
@@ -31,13 +30,12 @@ export class WebHelpSearchClient {
 
   async loadIndex(baseUrl: string): Promise<void> {
     await this.indexLoader.loadIndex(baseUrl);
-    this.indexCache.set(baseUrl, true);
     this.baseUrl = baseUrl;
   }
 
   async search(query: string, baseUrl?: string): Promise<SearchResult> {
     const indexUrl = baseUrl || this.baseUrl;
-    
+
     if (!indexUrl) {
       return {
         error: 'No base URL provided for search index',
@@ -50,8 +48,8 @@ export class WebHelpSearchClient {
       };
     }
 
-    // Load index if not already cached
-    if (!this.indexCache.has(indexUrl)) {
+    // Load index if not already loaded or base URL changed
+    if (!this.baseUrl || this.baseUrl !== indexUrl) {
       try {
         await this.loadIndex(indexUrl);
       } catch (error: any) {
@@ -177,32 +175,4 @@ export class WebHelpSearchClient {
     return htmlContent;
   }
 
-  displayTopResults(result: SearchResult, maxResults: number = 10): void {
-    if (result.error) {
-      console.error(`Error: ${result.error}`);
-      return;
-    }
-
-    if (result.results.length === 0) {
-      console.log('No results found.');
-      return;
-    }
-
-    const topResults = result.results.slice(0, maxResults);
-    
-    topResults.forEach((doc, index) => {
-      console.log(`${index + 1}. ${doc.title} (Score: ${doc.score})`);
-      console.log(`   Path: ${doc.path}`);
-      if (doc.description) {
-        const desc = doc.description.length > 150 
-          ? doc.description.substring(0, 150) + '...' 
-          : doc.description;
-        console.log(`   Description: ${desc}`);
-      }
-      if (doc.words && doc.words.length > 0) {
-        console.log(`   Matched words: ${doc.words.join(', ')}`);
-      }
-      console.log('');
-    });
-  }
 }
