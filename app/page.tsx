@@ -41,7 +41,10 @@ export default function HomePage() {
     }
   }
 
-  const addUrlField = () => setWebhelpUrls([...webhelpUrls, '']);
+  const addUrlField = () => {
+    alert('Work in progress');
+    setWebhelpUrls([...webhelpUrls, '']);
+  };
   const updateUrl = (index: number, value: string) => {
     const newUrls = [...webhelpUrls];
     newUrls[index] = value;
