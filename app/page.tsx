@@ -365,16 +365,16 @@ export default function HomePage() {
               </div>
               <h3 className="text-2xl font-bold mb-4 text-purple-300">Open Source</h3>
               <p className="text-gray-300 leading-relaxed">
-                Deploy your own server and customize it for your needs.{' '}
-                <a
-                  href="https://github.com/ctalau/webhelp-mcp"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline"
-                >
-                  view on GitHub
-                </a>
+                Deploy your own server and customize it for your needs.
               </p>
+              <a
+                href="https://github.com/ctalau/webhelp-mcp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline block mt-2 text-gray-300"
+              >
+                Fork it on GitHub
+              </a>
             </div>
           </div>
         </div>
