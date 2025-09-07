@@ -85,6 +85,21 @@ test('mcp server federated search', async () => {
   const hasAuthor = searchResults.some((r: any) => r.url.startsWith(WEBHELP_URL2));
   assert.ok(hasEditor && hasAuthor, 'results should include both base URLs');
 
+  const first = searchResults[0];
+  assert.ok(first && first.id, 'first result should have an id');
+
+  const fetchResp = await client.callTool({ name: 'fetch', arguments: { id: first.id } });
+  assert.ok(fetchResp.content && fetchResp.content.length > 0, 'fetch returned content');
+  const doc = JSON.parse(fetchResp.content[0].text);
+  assert.ok(
+    doc.url.startsWith(WEBHELP_URL) || doc.url.startsWith(WEBHELP_URL2),
+    'fetched doc URL should come from one of the base URLs'
+  );
+  assert.ok(
+    doc.text.toLowerCase().includes('xml'),
+    'fetched document should include the search term'
+  );
+
   await client.close();
   await stop();
 });
