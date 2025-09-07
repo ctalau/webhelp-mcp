@@ -2,24 +2,34 @@ import { createMcpHandler } from "mcp-handler";
 import { z } from "zod";
 import { WebHelpSearchClient } from "../../lib/webhelp-search-client";
 import { NextRequest } from "next/server";
+import { decodeUrls } from "../../lib/url-pack";
 
 // Global search client instance
 const searchClient = new WebHelpSearchClient();
+
+function resolveBaseUrls(site: Array<string>): string[] {
+  if (site[0] === 'federated' && site[1]) {
+    return decodeUrls(site[1]);
+  }
+  const endpoint = site.join('/');
+  return [`https://${endpoint}/`];
+}
 
 const handler = async (
   req: NextRequest,
   { params }: { params: Promise<{ site: Array<string> }> }
 ) => {
   const { site } = await params;
-  let endpoint = site.join('/');
-  let baseUrl = `https://${endpoint}/`;
+  const endpoint = site.join('/');
+  const baseUrls = resolveBaseUrls(site);
+  const baseUrlDesc = baseUrls.join(', ');
   console.log('Requests:', req.nextUrl.pathname, endpoint);
 
   return createMcpHandler(
     async (server) => {
       server.tool(
         "search",
-        "Search documentation for the site at: " + baseUrl,
+        "Search documentation for the site at: " + baseUrlDesc,
         {
           query: z.string().describe("Search query string (supports boolean operators like AND, OR)"),
         },
@@ -27,7 +37,7 @@ const handler = async (
           console.log('Tool "search" invoked with params:', { query });
           try {
             // Perform the search (index loading is now handled automatically)
-            const result = await searchClient.search(query, baseUrl);
+            const result = await searchClient.search(query, baseUrls);
             const maxResultsToUse = 10;
             
             if (result.error) {
@@ -97,7 +107,7 @@ const handler = async (
       capabilities: {
         tools: {
           search: {
-            description: "Search documentation for the site at: " + baseUrl,
+            description: "Search documentation for the site at: " + baseUrlDesc,
           },
           fetch: {
             description: "Fetch the content of a document by its ID"

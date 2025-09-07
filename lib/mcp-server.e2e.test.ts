@@ -4,8 +4,11 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { Client } from '@modelcontextprotocol/sdk/client';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp';
+import { encodeUrls } from './url-pack';
 
 const WEBHELP_ENDPOINT = 'www.oxygenxml.com/doc/versions/27.1/ug-editor';
+const WEBHELP_URL = 'https://www.oxygenxml.com/doc/versions/27.1/ug-editor/';
+const WEBHELP_URL2 = 'https://www.oxygenxml.com/doc/versions/27.1/ug-author/';
 
 async function startNextServer(): Promise<{ port: number; stop: () => Promise<void> }> {
   const proc = spawn(process.execPath, ['node_modules/next/dist/bin/next', 'dev', '-p', '0'], {
@@ -58,6 +61,44 @@ test('mcp server search and fetch tools', async () => {
     'You can use Oxygen XML Editor to generate detailed documentation for the components ' +
     'of a WSDL document in HTML format.';
   assert.ok(doc.text.includes(snippet), `document should include snippet: ${snippet}`);
+
+  await client.close();
+  await stop();
+});
+
+test('mcp server federated search', async () => {
+  const { port, stop } = await startNextServer();
+
+  const encoded = encodeUrls([WEBHELP_URL, WEBHELP_URL2]);
+  const transport = new StreamableHTTPClientTransport(
+    `http://localhost:${port}/federated/${encoded}`
+  );
+  const client = new Client({ name: 'e2e-test-client', version: '1.0.0' });
+  await client.connect(transport);
+
+  const searchResp = await client.callTool({ name: 'search', arguments: { query: 'XML' } });
+  assert.ok(searchResp.content && searchResp.content.length > 0, 'search returned content');
+  const searchResults = JSON.parse(searchResp.content[0].text);
+  assert.ok(searchResults.length > 0, 'expected search results');
+
+  const hasEditor = searchResults.some((r: any) => r.url.startsWith(WEBHELP_URL));
+  const hasAuthor = searchResults.some((r: any) => r.url.startsWith(WEBHELP_URL2));
+  assert.ok(hasEditor && hasAuthor, 'results should include both base URLs');
+
+  const first = searchResults[0];
+  assert.ok(first && first.id, 'first result should have an id');
+
+  const fetchResp = await client.callTool({ name: 'fetch', arguments: { id: first.id } });
+  assert.ok(fetchResp.content && fetchResp.content.length > 0, 'fetch returned content');
+  const doc = JSON.parse(fetchResp.content[0].text);
+  assert.ok(
+    doc.url.startsWith(WEBHELP_URL) || doc.url.startsWith(WEBHELP_URL2),
+    'fetched doc URL should come from one of the base URLs'
+  );
+  assert.ok(
+    doc.text.toLowerCase().includes('xml'),
+    'fetched document should include the search term'
+  );
 
   await client.close();
   await stop();
