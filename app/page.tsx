@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { encodeUrls } from '../lib/url-pack';
 
 export default function HomePage() {
   const [webhelpUrls, setWebhelpUrls] = useState<string[]>([
@@ -28,21 +29,20 @@ export default function HomePage() {
       return;
     }
     try {
-      const mcp = trimmed
-        .map((u) => {
-          const url = new URL(u);
-          const pathWithoutProtocol = url.hostname + url.pathname;
-          return `${baseUrl.replace(/\/$/, '')}/${pathWithoutProtocol}`;
-        })
-        .join('\n');
-      setMcpUrls(mcp);
+      if (trimmed.length === 1) {
+        const url = new URL(trimmed[0]);
+        const pathWithoutProtocol = url.hostname + url.pathname;
+        setMcpUrls(`${baseUrl.replace(/\/$/, '')}/${pathWithoutProtocol}`);
+      } else {
+        const encoded = encodeUrls(trimmed);
+        setMcpUrls(`${baseUrl.replace(/\/$/, '')}/federated/${encoded}`);
+      }
     } catch {
       setMcpUrls('Please enter a valid URL');
     }
   }
 
   const addUrlField = () => {
-    alert('Work in progress');
     setWebhelpUrls([...webhelpUrls, '']);
   };
   const updateUrl = (index: number, value: string) => {
