@@ -55,6 +55,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             backdrop-filter: blur(10px);
             background: rgba(255, 255, 255, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0;
+        }
+        .glass-effect.animate-fade-in {
+            opacity: 1;
         }
         .code-block {
             background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
