@@ -36,3 +36,11 @@ test('search across multiple indexes', async () => {
   const hasAuthor = result.results.some(r => r.url.startsWith(WEBHELP_URL2));
   assert.ok(hasEditor && hasAuthor, 'results should include both base URLs');
 });
+
+test('semantic search returns results', async () => {
+  const client = new WebHelpSearchClient();
+  const result = await client.semanticSearch('wsdl', WEBHELP_URL);
+  assert.ok(result.results.length > 0, 'expected semantic search results');
+  const first = result.results[0];
+  assert.ok(first.url.startsWith(WEBHELP_URL));
+});
