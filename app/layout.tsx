@@ -18,8 +18,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               animation: {
                 'float': 'float 6s ease-in-out infinite',
                 'glow': 'glow 2s ease-in-out infinite alternate',
-                'slide-up': 'slideUp 0.8s ease-out',
-                'fade-in': 'fadeIn 1s ease-out'
+                'slide-up': 'slideUp 0.8s ease-out forwards',
+                'fade-in': 'fadeIn 1s ease-out forwards'
               },
               keyframes: {
                 float: {
