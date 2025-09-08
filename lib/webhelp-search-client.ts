@@ -2,6 +2,8 @@ import { downloadFile } from './downloadFile';
 import TurndownService from 'turndown';
 import { JSDOM } from 'jsdom';
 import { WebHelpIndexLoader } from './webhelp-index-loader';
+import * as https from 'https';
+import { HttpsProxyAgent } from 'https-proxy-agent';
 
 export interface SearchResult {
   error?: string;
@@ -77,6 +79,85 @@ export class WebHelpSearchClient {
     mergedResults.sort((a, b) => b.score - a.score);
 
     return { results: mergedResults };
+  }
+
+  /**
+   * Perform a semantic search using Oxygen Feedback service
+   * @param query   Search query
+   * @param baseUrl Base documentation URL
+   */
+  async semanticSearch(query: string, baseUrl: string): Promise<SearchResult> {
+    try {
+      const mainPage = await downloadFile(baseUrl);
+      const match = mainPage.match(/feedback-init[^>]+deploymentToken=([^"'>]+)/);
+      if (!match) {
+        return { error: 'Deployment token not found', results: [] };
+      }
+      const token = match[1];
+
+      const postData = JSON.stringify({
+        searchQuery: query,
+        facets: [],
+        currentPage: 1,
+        pageSize: 10,
+        exactSearch: false,
+        defaultJoinOperator: 'AND',
+        highlight: false,
+        indexFields: []
+      });
+
+      const proxyUrl =
+        process.env.HTTPS_PROXY ||
+        process.env.https_proxy ||
+        process.env.HTTP_PROXY ||
+        process.env.http_proxy;
+
+      const options: any = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData)
+        }
+      };
+      if (proxyUrl) {
+        options.agent = new HttpsProxyAgent(proxyUrl);
+      }
+
+      const dataStr: string = await new Promise((resolve, reject) => {
+        const req = https.request(
+          `https://feedback.oxygenxml.com/api/html-content/search?token=${token}`,
+          options,
+          res => {
+            if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+              let body = '';
+              res.on('data', chunk => (body += chunk));
+              res.on('end', () => resolve(body));
+            } else {
+              reject(new Error(`HTTP ${res.statusCode}: ${res.statusMessage}`));
+            }
+          }
+        );
+        req.on('error', reject);
+        req.write(postData);
+        req.end();
+      });
+
+      const data: any = JSON.parse(dataStr);
+      const results = (data.documents || []).map((doc: any, idx: number) => {
+        const url = doc.fields?.uri || '';
+        const rel = url.startsWith(baseUrl) ? url.substring(baseUrl.length) : url;
+        return {
+          id: `0:${rel}`,
+          title: doc.fields?.title || '',
+          url,
+          score: doc.score ?? 0
+        };
+      });
+
+      return { results };
+    } catch (error: any) {
+      return { error: `Semantic search failed: ${error.message}`, results: [] };
+    }
   }
 
   private formatSearchResult(searchResult: any, baseUrl: string, index: number): SearchResult {
