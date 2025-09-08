@@ -19,30 +19,35 @@ export class WebHelpSearchClient {
   private indexLoader: WebHelpIndexLoader;
   private baseUrls: string[];
 
-  constructor() {
+  constructor(baseUrls: string | string[] = []) {
     this.indexLoader = new WebHelpIndexLoader();
-    this.baseUrls = [];
+    this.baseUrls = Array.isArray(baseUrls)
+      ? baseUrls
+      : baseUrls
+      ? [baseUrls]
+      : [];
+
+    if (this.baseUrls.length === 0) {
+      throw new Error('No base URL provided for search index');
+    }
   }
 
   async loadIndex(baseUrl: string): Promise<void> {
     await this.indexLoader.loadIndex(baseUrl);
-    if (!this.baseUrls.includes(baseUrl)) {
-      this.baseUrls.push(baseUrl);
-    }
   }
 
-  async search(query: string, baseUrls?: string | string[]): Promise<SearchResult> {
-    const urls = baseUrls
-      ? Array.isArray(baseUrls)
-        ? baseUrls
-        : [baseUrls]
-      : this.baseUrls;
+  async search(query: string): Promise<SearchResult> {
+    const urls = this.baseUrls;
 
-    if (urls.length === 0) {
-      return {
-        error: 'No base URL provided for search index',
-        results: []
-      };
+    if (urls.length === 1) {
+      try {
+        const semantic = await this.semanticSearch(query, urls[0]);
+        if (!semantic.error && semantic.results.length > 0) {
+          return semantic;
+        }
+      } catch (e) {
+        // ignore and fall back to index search
+      }
     }
 
     const mergedResults: SearchResult['results'] = [];
@@ -59,10 +64,10 @@ export class WebHelpSearchClient {
 
       try {
         let result: any = null;
-        this.indexLoader.performSearch(query, function(r: any) {
+        this.indexLoader.performSearch(query, function (r: any) {
           result = r;
         });
-        const idx = this.baseUrls.indexOf(url);
+        const idx = urls.indexOf(url);
         const formatted = this.formatSearchResult(result, url, idx);
         if (formatted.error) {
           return { error: formatted.error, results: [] };
