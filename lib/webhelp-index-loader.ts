@@ -2,8 +2,6 @@ import { downloadFile } from './downloadFile';
 
 interface MetadataFiles {
   stopwords: string;
-  linkToParent: string;
-  keywords: string;
   htmlFileInfoList: string;
 }
 
@@ -68,9 +66,7 @@ export class WebHelpIndexLoader {
   async downloadMetadataFiles(searchUrl: string): Promise<MetadataFiles> {
     const metaFiles: MetadataFile[] = [
       { name: 'htmlFileInfoList.js', var: 'htmlFileInfoList' },
-      { name: 'stopwords.js', var: 'stopwords' },
-      { name: 'link-to-parent.js', var: 'linkToParent' },
-      { name: 'keywords.js', var: 'keywords' }
+      { name: 'stopwords.js', var: 'stopwords' }
     ];
 
     const loadedFiles: any = {};
@@ -344,8 +340,6 @@ export class WebHelpIndexLoader {
 
       // Process metadata files into our context
       this.processStopwords(metadataFiles.stopwords);
-      this.processLinkToParent(metadataFiles.linkToParent);
-      this.processKeywords(metadataFiles.keywords);
       this.processFileInfoList(metadataFiles.htmlFileInfoList);
 
       // Process index files into our context
