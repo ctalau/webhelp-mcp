@@ -43,9 +43,6 @@ const handler = async (
                 result = await searchClient.semanticSearch(query, baseUrls[0]);
                 if (result.error || result.results.length === 0) {
                   result = await searchClient.search(query, baseUrls);
-                } else {
-                  // Load index to enable subsequent fetch operations
-                  await searchClient.loadIndex(baseUrls[0]).catch(() => {});
                 }
               } catch (e) {
                 result = await searchClient.search(query, baseUrls);
