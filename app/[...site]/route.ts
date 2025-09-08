@@ -36,10 +36,25 @@ const handler = async (
         async ({ query }) => {
           console.log('Tool "search" invoked with params:', { query });
           try {
-            // Perform the search (index loading is now handled automatically)
-            const result = await searchClient.search(query, baseUrls);
+            // Try semantic search first when only one base URL
+            let result;
+            if (baseUrls.length === 1) {
+              try {
+                result = await searchClient.semanticSearch(query, baseUrls[0]);
+                if (result.error || result.results.length === 0) {
+                  result = await searchClient.search(query, baseUrls);
+                } else {
+                  // Load index to enable subsequent fetch operations
+                  await searchClient.loadIndex(baseUrls[0]).catch(() => {});
+                }
+              } catch (e) {
+                result = await searchClient.search(query, baseUrls);
+              }
+            } else {
+              result = await searchClient.search(query, baseUrls);
+            }
             const maxResultsToUse = 10;
-            
+
             if (result.error) {
               return {
                 content: [{
@@ -52,11 +67,11 @@ const handler = async (
 
             // Format results
             const topResults = result.results.slice(0, maxResultsToUse);
-            let results = topResults.map((doc: any) => ({
-                title: doc.title,
-                id: doc.id,
-                url: doc.url
-              }));
+            const results = topResults.map((doc: any) => ({
+              title: doc.title,
+              id: doc.id,
+              url: doc.url
+            }));
             return {
               content: [{
                 type: "text",
@@ -70,58 +85,6 @@ const handler = async (
                 text: `Search failed: ${error.message}`
               }],
               isError: true
-            };
-          }
-        }
-      );
-      server.tool(
-        "semantic_search_experimental",
-        "Experimental semantic search across documentation sites at: " + baseUrlDesc,
-        {
-          query: z
-            .string()
-            .describe("Search query string for semantic search"),
-        },
-        async ({ query }) => {
-          console.log('Tool "semantic_search_experimental" invoked with params:', { query });
-          try {
-            const resultsBySite = await Promise.all(
-              baseUrls.map(url => searchClient.semanticSearch(query, url, 25))
-            );
-            const interleaved: any[] = [];
-            const pointers = new Array(resultsBySite.length).fill(0);
-            while (interleaved.length < 25) {
-              let added = false;
-              for (let i = 0; i < resultsBySite.length && interleaved.length < 25; i++) {
-                const res = resultsBySite[i].results;
-                const ptr = pointers[i];
-                if (ptr < res.length) {
-                  interleaved.push(res[ptr]);
-                  pointers[i]++;
-                  added = true;
-                }
-              }
-              if (!added) {
-                break;
-              }
-            }
-            const formatted = interleaved.slice(0, 25).map((doc: any) => ({
-              title: doc.title,
-              id: doc.id,
-              url: doc.url,
-            }));
-            return {
-              content: [{ type: "text", text: JSON.stringify(formatted) }],
-            };
-          } catch (error: any) {
-            return {
-              content: [
-                {
-                  type: "text",
-                  text: `Semantic search failed: ${error.message}`,
-                },
-              ],
-              isError: true,
             };
           }
         }
@@ -160,10 +123,6 @@ const handler = async (
         tools: {
           search: {
             description: "Search documentation for the site at: " + baseUrlDesc,
-          },
-          semantic_search_experimental: {
-            description:
-              "Experimental semantic search across documentation sites using Oxygen Feedback",
           },
           fetch: {
             description: "Fetch the content of a document by its ID",

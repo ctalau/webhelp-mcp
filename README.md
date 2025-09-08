@@ -15,15 +15,14 @@ Visit the live demo at [webhelp-mcp.vercel.app](https://webhelp-mcp.vercel.app/)
 ### Tech Stack
 
 - **Framework**: Next.js 15, React 19 and TypeScript
-- **MCP**: `mcp-handler` with `search`, `semantic_search_experimental` and `fetch` tools powered by a `WebHelpSearchClient`
+- **MCP**: `mcp-handler` with `search` and `fetch` tools powered by a `WebHelpSearchClient`
 - **Content processing**: `jsdom` and `turndown` convert WebHelp HTML to Markdown
 
 ### Architecture
 
 The server dynamically loads the WebHelp search index for a requested site and exposes a Model Context Protocol endpoint. The Next.js API route `/[...site]` wraps the `WebHelpSearchClient` with `createMcpHandler`, providing:
 
-- `search` – query WebHelp documentation and return matching documents
-- `semantic_search_experimental` – experimental semantic search that interleaves results from multiple sites
+- `search` – query WebHelp documentation (uses semantic search when available and falls back to index search)
 - `fetch` – retrieve and convert a document to Markdown for detailed analysis
 
 ### Deploying to Vercel

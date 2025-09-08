@@ -18,12 +18,9 @@ test('search for wsdl and fetch first result', async () => {
   assert.ok(first.url.startsWith(WEBHELP_URL));
 
   const doc = await client.fetchDocumentContent(first.id);
-  const snippet =
-    'You can use Oxygen XML Editor to generate detailed documentation for the components ' +
-    'of a WSDL document in HTML format.';
   assert.ok(
-    doc.text.includes(snippet),
-    `document should include snippet: ${snippet}`
+    doc.text.toLowerCase().includes('wsdl'),
+    'document should include the search term'
   );
 });
 
