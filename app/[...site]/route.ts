@@ -4,9 +4,6 @@ import { WebHelpSearchClient } from "../../lib/webhelp-search-client";
 import { NextRequest } from "next/server";
 import { decodeUrls } from "../../lib/url-pack";
 
-// Global search client instance
-const searchClient = new WebHelpSearchClient();
-
 function resolveBaseUrls(site: Array<string>): string[] {
   if (site[0] === 'federated' && site[1]) {
     return decodeUrls(site[1]);
@@ -25,6 +22,8 @@ const handler = async (
   const baseUrlDesc = baseUrls.join(', ');
   console.log('Requests:', req.nextUrl.pathname, endpoint);
 
+  const searchClient = new WebHelpSearchClient(baseUrls);
+
   return createMcpHandler(
     async (server) => {
       server.tool(
@@ -36,20 +35,7 @@ const handler = async (
         async ({ query }) => {
           console.log('Tool "search" invoked with params:', { query });
           try {
-            // Try semantic search first when only one base URL
-            let result;
-            if (baseUrls.length === 1) {
-              try {
-                result = await searchClient.semanticSearch(query, baseUrls[0]);
-                if (result.error || result.results.length === 0) {
-                  result = await searchClient.search(query, baseUrls);
-                }
-              } catch (e) {
-                result = await searchClient.search(query, baseUrls);
-              }
-            } else {
-              result = await searchClient.search(query, baseUrls);
-            }
+            const result = await searchClient.search(query);
             const maxResultsToUse = 10;
 
             if (result.error) {
