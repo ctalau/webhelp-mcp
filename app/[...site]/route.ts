@@ -75,6 +75,58 @@ const handler = async (
         }
       );
       server.tool(
+        "semantic_search_experimental",
+        "Experimental semantic search across documentation sites at: " + baseUrlDesc,
+        {
+          query: z
+            .string()
+            .describe("Search query string for semantic search"),
+        },
+        async ({ query }) => {
+          console.log('Tool "semantic_search_experimental" invoked with params:', { query });
+          try {
+            const resultsBySite = await Promise.all(
+              baseUrls.map(url => searchClient.semanticSearch(query, url, 25))
+            );
+            const interleaved: any[] = [];
+            const pointers = new Array(resultsBySite.length).fill(0);
+            while (interleaved.length < 25) {
+              let added = false;
+              for (let i = 0; i < resultsBySite.length && interleaved.length < 25; i++) {
+                const res = resultsBySite[i].results;
+                const ptr = pointers[i];
+                if (ptr < res.length) {
+                  interleaved.push(res[ptr]);
+                  pointers[i]++;
+                  added = true;
+                }
+              }
+              if (!added) {
+                break;
+              }
+            }
+            const formatted = interleaved.slice(0, 25).map((doc: any) => ({
+              title: doc.title,
+              id: doc.id,
+              url: doc.url,
+            }));
+            return {
+              content: [{ type: "text", text: JSON.stringify(formatted) }],
+            };
+          } catch (error: any) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `Semantic search failed: ${error.message}`,
+                },
+              ],
+              isError: true,
+            };
+          }
+        }
+      );
+      server.tool(
         "fetch",
         "Retrieve complete document content by ID for detailed analysis and citation. Use this after finding relevant documents with the search tool.",
         {
@@ -109,8 +161,12 @@ const handler = async (
           search: {
             description: "Search documentation for the site at: " + baseUrlDesc,
           },
+          semantic_search_experimental: {
+            description:
+              "Experimental semantic search across documentation sites using Oxygen Feedback",
+          },
           fetch: {
-            description: "Fetch the content of a document by its ID"
+            description: "Fetch the content of a document by its ID",
           },
         },
       },

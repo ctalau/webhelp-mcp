@@ -86,7 +86,11 @@ export class WebHelpSearchClient {
    * @param query   Search query
    * @param baseUrl Base documentation URL
    */
-  async semanticSearch(query: string, baseUrl: string): Promise<SearchResult> {
+  async semanticSearch(
+    query: string,
+    baseUrl: string,
+    pageSize: number = 10
+  ): Promise<SearchResult> {
     try {
       const mainPage = await downloadFile(baseUrl);
       const match = mainPage.match(/feedback-init[^>]+deploymentToken=([^"'>]+)/);
@@ -99,7 +103,7 @@ export class WebHelpSearchClient {
         searchQuery: query,
         facets: [],
         currentPage: 1,
-        pageSize: 10,
+        pageSize,
         exactSearch: false,
         defaultJoinOperator: 'AND',
         highlight: false,

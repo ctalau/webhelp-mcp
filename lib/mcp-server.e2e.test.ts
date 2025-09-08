@@ -104,3 +104,29 @@ test('mcp server federated search', async () => {
   await stop();
 });
 
+test('mcp server semantic_search_experimental tool', async () => {
+  const { port, stop } = await startNextServer();
+
+  const encoded = encodeUrls([WEBHELP_URL, WEBHELP_URL2]);
+  const transport = new StreamableHTTPClientTransport(
+    `http://localhost:${port}/federated/${encoded}`
+  );
+  const client = new Client({ name: 'e2e-test-client', version: '1.0.0' });
+  await client.connect(transport);
+
+  const resp = await client.callTool({
+    name: 'semantic_search_experimental',
+    arguments: { query: 'XML' }
+  });
+  assert.ok(resp.content && resp.content.length > 0, 'semantic search returned content');
+  const results = JSON.parse(resp.content[0].text);
+  assert.equal(results.length, 25, 'expected 25 semantic results');
+
+  const hasEditor = results.some((r: any) => r.url.startsWith(WEBHELP_URL));
+  const hasAuthor = results.some((r: any) => r.url.startsWith(WEBHELP_URL2));
+  assert.ok(hasEditor && hasAuthor, 'results should include both base URLs');
+
+  await client.close();
+  await stop();
+});
+
