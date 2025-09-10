@@ -3,6 +3,7 @@ import { z } from "zod";
 import { WebHelpSearchClient } from "../../lib/webhelp-search-client";
 import { NextRequest } from "next/server";
 import { decodeUrls } from "../../lib/url-pack";
+import { fetchSiteTitle } from "../../lib/site-title";
 
 function resolveBaseUrls(site: Array<string>): string[] {
   if (site[0] === 'federated' && site[1]) {
@@ -20,6 +21,13 @@ const handler = async (
   const endpoint = site.join('/');
   const baseUrls = resolveBaseUrls(site);
   const baseUrlDesc = baseUrls.join(', ');
+  const titles = (await Promise.all(baseUrls.map(fetchSiteTitle))).filter(
+    (t): t is string => Boolean(t)
+  );
+  const searchDescription =
+    titles.length > 0
+      ? `Search documentation for ${titles.join(', ')}`
+      : `Search documentation for the site at: ${baseUrlDesc}`;
   console.log('Requests:', req.nextUrl.pathname, endpoint);
 
   const searchClient = new WebHelpSearchClient(baseUrls);
@@ -28,9 +36,11 @@ const handler = async (
     async (server) => {
       server.tool(
         "search",
-        "Search documentation for the site at: " + baseUrlDesc,
+        searchDescription,
         {
-          query: z.string().describe("Search query string (supports boolean operators like AND, OR)"),
+          query: z
+            .string()
+            .describe("Search query string (supports boolean operators like AND, OR)"),
         },
         async ({ query }) => {
           console.log('Tool "search" invoked with params:', { query });
@@ -105,7 +115,7 @@ const handler = async (
       capabilities: {
         tools: {
           search: {
-            description: "Search documentation for the site at: " + baseUrlDesc,
+            description: searchDescription,
           },
           fetch: {
             description: "Fetch the content of a document by its ID",

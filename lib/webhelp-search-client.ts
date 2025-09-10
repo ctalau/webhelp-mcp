@@ -4,6 +4,7 @@ import { JSDOM } from 'jsdom';
 import { WebHelpIndexLoader } from './webhelp-index-loader';
 import * as https from 'https';
 import { HttpsProxyAgent } from 'https-proxy-agent';
+import { extractTitleFromContent } from './site-title';
 
 export interface SearchResult {
   error?: string;
@@ -210,7 +211,7 @@ export class WebHelpSearchClient {
     
     return {
       id: documentId,
-      title: this.extractTitleFromContent(htmlContent) || documentId,
+      title: extractTitleFromContent(htmlContent) || documentId,
       text: markdownContent,
       url: fullUrl
     };
@@ -224,17 +225,6 @@ export class WebHelpSearchClient {
     }
     const path = pathParts.join(':');
     return `${baseUrl}${path}`;
-  }
-
-  extractTitleFromContent(content: string): string {
-    if (!content.includes('<title>')) {
-      return '';
-    }
-    let titleAndAfter = content.split('<title>')[1];
-    if (!titleAndAfter.includes('</title>')) {
-      return titleAndAfter;
-    }
-    return titleAndAfter.split('</title>')[0];
   }
 
   extractArticleElement(htmlContent: string): string {
