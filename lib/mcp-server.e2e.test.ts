@@ -104,3 +104,22 @@ test('mcp server federated search', async () => {
   await stop();
 });
 
+test('search tool description includes site title', { timeout: 60000 }, async () => {
+  const { port, stop } = await startNextServer();
+
+  const transport = new StreamableHTTPClientTransport(
+    `http://localhost:${port}/www.oxygenxml.com/dita-ot-docs`
+  );
+  const client = new Client({ name: 'e2e-test-client', version: '1.0.0' });
+  await client.connect(transport);
+
+  const caps = client.getServerCapabilities();
+  assert.ok(
+    caps?.tools?.search?.description?.includes('DITA Open Toolkit'),
+    `search description missing site title: ${caps?.tools?.search?.description}`
+  );
+
+  await client.close();
+  await stop();
+});
+
